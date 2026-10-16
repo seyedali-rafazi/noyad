@@ -1,13 +1,19 @@
-/**
- * Database Schema Registry
- *
- * All entity tables and relations should be declared in dedicated files
- * within this directory and exported from this index file.
- *
- * Example (future):
- * export * from './tasks';
- * export * from './notes';
- * export * from './conversations';
- */
+import { tasks } from './tasks';
+import { notes } from './notes';
+import { conversations } from './conversations';
+import { messages } from './messages';
+import { aiApiKeys } from './aiKeys';
 
-export const schema = {};
+export * from './tasks';
+export * from './notes';
+export * from './conversations';
+export * from './messages';
+export * from './aiKeys';
+
+export const schema = {
+  tasks,
+  notes,
+  conversations,
+  messages,
+  aiApiKeys,
+};

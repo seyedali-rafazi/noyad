@@ -16,8 +16,10 @@ export default function TabLayout() {
   return (
     <Tabs
       initialRouteName="index"
+      backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: isDark
           ? 'rgba(255, 255, 255, 0.45)'
@@ -83,85 +85,17 @@ export default function TabLayout() {
         ),
       }}
     >
-      {/* RTL order: assistant (leftmost), notes, calendar, tasks, today (rightmost) */}
-      <Tabs.Screen
-        name="assistant"
-        options={{
-          title: 'دستیار',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconWrap,
-                focused && {
-                  backgroundColor: isDark
-                    ? 'rgba(99, 102, 241, 0.22)'
-                    : 'rgba(99, 102, 241, 0.12)',
-                  borderColor: isDark
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(99, 102, 241, 0.22)',
-                },
-              ]}
-            >
-              <Ionicons
-                name={focused ? 'sparkles' : 'sparkles-outline'}
-                size={22}
-                color={focused ? colors.accent : color}
-              />
-            </View>
-          ),
-        }}
-      />
+      {/* RTL order from Right to Left: index (امروز), assistant (دستیار), tasks (کارها), notes (یادداشت‌ها) */}
       <Tabs.Screen
         name="notes"
         options={{
           title: 'یادداشت‌ها',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconWrap,
-                focused && {
-                  backgroundColor: isDark
-                    ? 'rgba(99, 102, 241, 0.22)'
-                    : 'rgba(99, 102, 241, 0.12)',
-                  borderColor: isDark
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(99, 102, 241, 0.22)',
-                },
-              ]}
-            >
-              <Ionicons
-                name={focused ? 'document-text' : 'document-text-outline'}
-                size={22}
-                color={focused ? colors.accent : color}
-              />
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="calendar"
-        options={{
-          title: 'تقویم',
-          tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconWrap,
-                focused && {
-                  backgroundColor: isDark
-                    ? 'rgba(99, 102, 241, 0.22)'
-                    : 'rgba(99, 102, 241, 0.12)',
-                  borderColor: isDark
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(99, 102, 241, 0.22)',
-                },
-              ]}
-            >
-              <Ionicons
-                name={focused ? 'calendar' : 'calendar-outline'}
-                size={22}
-                color={focused ? colors.accent : color}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'document-text' : 'document-text-outline'}
+              size={24}
+              color={focused ? colors.accent : color}
+            />
           ),
         }}
       />
@@ -170,25 +104,24 @@ export default function TabLayout() {
         options={{
           title: 'کارها',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconWrap,
-                focused && {
-                  backgroundColor: isDark
-                    ? 'rgba(99, 102, 241, 0.22)'
-                    : 'rgba(99, 102, 241, 0.12)',
-                  borderColor: isDark
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(99, 102, 241, 0.22)',
-                },
-              ]}
-            >
-              <Ionicons
-                name={focused ? 'checkbox' : 'checkbox-outline'}
-                size={22}
-                color={focused ? colors.accent : color}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'checkbox' : 'checkbox-outline'}
+              size={24}
+              color={focused ? colors.accent : color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="assistant"
+        options={{
+          title: 'دستیار',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'sparkles' : 'sparkles-outline'}
+              size={24}
+              color={focused ? colors.accent : color}
+            />
           ),
         }}
       />
@@ -197,25 +130,11 @@ export default function TabLayout() {
         options={{
           title: 'امروز',
           tabBarIcon: ({ color, focused }) => (
-            <View
-              style={[
-                styles.iconWrap,
-                focused && {
-                  backgroundColor: isDark
-                    ? 'rgba(99, 102, 241, 0.22)'
-                    : 'rgba(99, 102, 241, 0.12)',
-                  borderColor: isDark
-                    ? 'rgba(129, 140, 248, 0.35)'
-                    : 'rgba(99, 102, 241, 0.22)',
-                },
-              ]}
-            >
-              <Ionicons
-                name={focused ? 'today' : 'today-outline'}
-                size={22}
-                color={focused ? colors.accent : color}
-              />
-            </View>
+            <Ionicons
+              name={focused ? 'today' : 'today-outline'}
+              size={24}
+              color={focused ? colors.accent : color}
+            />
           ),
         }}
       />
@@ -224,15 +143,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  iconWrap: {
-    width: 42,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   specularShine: {
     position: 'absolute',
     top: 0,

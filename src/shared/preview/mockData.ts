@@ -15,7 +15,9 @@ export const INITIAL_NOTES: Note[] = [];
 export interface ProposedActionPreview {
   type: 'create_task' | 'update_task' | 'delete_task';
   title: string;
+  dueDate?: string | null;
   dueDateLabel?: string;
+  priority?: import('../../domain/types/common').TaskPriority;
   priorityLabel?: string;
   isDestructive?: boolean;
 }

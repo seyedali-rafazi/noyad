@@ -5,6 +5,8 @@ import {
   ProposedActionPreview,
 } from '../../shared/preview/mockData';
 import { usePlannerStore } from '../planner/plannerStore';
+import { aiClient } from '../../core/ai/aiClient';
+import { TaskPriority } from '../../domain/types/common';
 
 interface ChatState {
   messages: ChatMessageItem[];
@@ -16,7 +18,7 @@ interface ChatState {
     onConfirm: () => void;
   } | null;
 
-  sendMessage: (content: string) => void;
+  sendMessage: (content: string) => Promise<void>;
   confirmAction: (action: ProposedActionPreview) => void;
   dismissConfirmation: () => void;
 }
@@ -52,11 +54,39 @@ export const useChatStore = create<ChatState>((set, get) => ({
       return;
     }
 
-    // Apply real action to Planner Store
-    if (action.type === 'create_task') {
+    // Apply real action to Planner Store & SQLite persistence
+    const actionType: string = action.type || (action as any).action;
+    if (actionType === 'create_task' || actionType === 'add_task' || actionType === 'new_task') {
+      let dueDateIso = action.dueDate;
+      if (!dueDateIso || isNaN(Date.parse(dueDateIso))) {
+        const d = new Date();
+        const label = action.dueDateLabel || '';
+        if (label.includes('پس‌فردا')) {
+          d.setDate(d.getDate() + 2);
+          d.setHours(10, 0, 0, 0);
+        } else if (label.includes('فردا')) {
+          d.setDate(d.getDate() + 1);
+          d.setHours(10, 0, 0, 0);
+        } else {
+          d.setHours(18, 0, 0, 0);
+        }
+        dueDateIso = d.toISOString();
+      }
+
+      const priority: TaskPriority =
+        action.priority ||
+        (action.priorityLabel === 'فوری'
+          ? 'urgent'
+          : action.priorityLabel === 'بالا' || action.priorityLabel === 'زیاد'
+          ? 'high'
+          : action.priorityLabel === 'کم' || action.priorityLabel === 'پایین'
+          ? 'low'
+          : 'medium');
+
       usePlannerStore.getState().addTask({
         title: action.title,
-        priority: 'medium',
+        dueDate: dueDateIso,
+        priority,
       });
     }
 
@@ -71,7 +101,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set((state) => ({ messages: [...state.messages, successMsg] }));
   },
 
-  sendMessage: (content: string) => {
+  sendMessage: async (content: string) => {
     const trimmed = content.trim();
     if (!trimmed) return;
 
@@ -88,72 +118,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
       isTyping: true,
     }));
 
-    // Generate response using actual planner store state
-    setTimeout(() => {
-      let replyContent = '';
-      let proposedAction: ProposedActionPreview | undefined = undefined;
+    try {
+      const history = get().messages.map((m) => ({
+        role: (m.role === 'user' ? 'user' : 'assistant') as 'user' | 'assistant',
+        content: m.content,
+      }));
 
-      const lower = trimmed.toLowerCase();
-      const plannerStore = usePlannerStore.getState();
-      const todayTasks = plannerStore.getTasksForDate(new Date());
-      const overdueTasks = plannerStore.getOverdueTasks();
-
-      if (lower.includes('امروز') || lower.includes('کارها')) {
-        if (todayTasks.length === 0) {
-          replyContent =
-            'در حال حاضر هیچ کاری برای امروز ثبت نشده است.\n\n' +
-            'می‌توانید کارهای جدید خود را اضافه کنید تا من در برنامه‌ریزی به شما کمک کنم.';
-        } else {
-          const list = todayTasks
-            .map(
-              (t) =>
-                `• ${t.title} (${
-                  t.status === 'completed' ? 'تکمیل شده ✓' : 'در انتظار'
-                })`
-            )
-            .join('\n');
-          replyContent = `برنامه امروز شما شامل این موارد است:\n${list}\n\nآیا مایلید کار جدیدی اضافه کنید؟`;
-        }
-      } else if (lower.includes('فردا') || lower.includes('برنامه‌ریزی')) {
-        replyContent =
-          'برای فردا برنامه‌ای در نظر دارید؟\n' +
-          'می‌توانم یک تسک جدید برای شروع روز فردا ثبت کنم:';
-        proposedAction = {
-          type: 'create_task',
-          title: 'بررسی کارها و اولویت‌بندی روزانه',
-          dueDateLabel: 'فردا ۱۰:۰۰',
-          priorityLabel: 'متوسط',
-          isDestructive: false,
-        };
-      } else if (lower.includes('یادداشت')) {
-        replyContent =
-          'می‌توانید از بخش یادداشت‌ها یادداشت‌های خود را مدیریت کنید یا بگویید چه موردی را می‌خواهید ثبت کنید.';
-      } else if (lower.includes('عقب') || lower.includes('عقب‌افتاده') || lower.includes('مرتب')) {
-        if (overdueTasks.length === 0) {
-          replyContent = 'عالی است! شما هیچ کار عقب‌افتاده‌ای ندارید.';
-        } else {
-          const list = overdueTasks.map((t) => `• ${t.title}`).join('\n');
-          replyContent = `کارهای عقب‌افتاده شما:\n${list}\n\nپیشنهاد می‌کنم آن‌ها را تعیین تکلیف کنید.`;
-        }
-      } else {
-        replyContent =
-          `پیام شما دریافت شد: «${trimmed}»\n\n` +
-          'من دستیار مدیریت زمان شما هستم. می‌توانید درباره کارهای امروز، تقویم و برنامه‌ریزی با من گفتگو کنید.';
-      }
+      const aiResponse = await aiClient.generateResponse(trimmed, history);
 
       const assistantMessage: ChatMessageItem = {
         id: `msg-ai-${Date.now()}`,
         conversationId: 'conv-default',
         role: 'assistant',
-        content: replyContent,
+        content: aiResponse.reply,
         createdAt: new Date().toISOString(),
-        proposedAction,
+        proposedAction: aiResponse.proposedAction,
       };
 
       set((state) => ({
         messages: [...state.messages, assistantMessage],
         isTyping: false,
       }));
-    }, 600);
+    } catch (err) {
+      console.error('Chat error:', err);
+      const fallbackMsg: ChatMessageItem = {
+        id: `msg-ai-${Date.now()}`,
+        conversationId: 'conv-default',
+        role: 'assistant',
+        content: 'متأسفانه در برقراری ارتباط خطایی رخ داد. لطفاً مجدداً تلاش فرمایید.',
+        createdAt: new Date().toISOString(),
+      };
+      set((state) => ({
+        messages: [...state.messages, fallbackMsg],
+        isTyping: false,
+      }));
+    }
   },
 }));

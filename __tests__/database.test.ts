@@ -106,9 +106,9 @@ describe('Local Database Infrastructure Tests', () => {
     expect(typeof migrationsManifest.migrations).toBe('object');
   });
 
-  it('applies migrations cleanly when no pending migrations exist', async () => {
+  it('applies migrations cleanly when pending migrations exist', async () => {
     const result = await applyMigrations();
     expect(result.success).toBe(true);
-    expect(result.appliedEntriesCount).toBe(0);
+    expect(result.appliedEntriesCount).toBe(migrationsManifest.journal.entries.length);
   });
 });

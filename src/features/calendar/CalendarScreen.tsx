@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../shared/theme';
 import { AppScreen } from '../../shared/components/AppScreen';
@@ -23,10 +24,11 @@ import {
 } from '../../core/calendar';
 
 export const CalendarScreen: React.FC = () => {
+  const router = useRouter();
   const { colors, radii, spacing, typography, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomOffset = Math.max(insets.bottom, 12) + (Platform.OS === 'android' ? 10 : 6);
-  const scrollBottomPadding = bottomOffset + 74 + 32;
+  const scrollBottomPadding = bottomOffset + 40;
 
   const selectedDate = usePlannerStore((s) => s.selectedDate);
   const setSelectedDate = usePlannerStore((s) => s.setSelectedDate);
@@ -57,6 +59,18 @@ export const CalendarScreen: React.FC = () => {
     const today = new Date();
     setCurrentMonthDate(today);
     setSelectedDate(today);
+  };
+
+  const handleClose = () => {
+    try {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch {
+      router.replace('/(tabs)');
+    }
   };
 
   const handleOpenAdd = () => {
@@ -92,6 +106,8 @@ export const CalendarScreen: React.FC = () => {
       <AppHeader
         title="تقویم شمسی"
         subtitle="برنامه زمانی و رویدادهای ماهانه"
+        showBack={true}
+        onBackPress={handleClose}
         rightAction={
           <Pressable
             onPress={handleTodayPress}

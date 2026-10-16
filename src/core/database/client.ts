@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { openDatabaseSync, SQLiteDatabase } from 'expo-sqlite';
 import { drizzle, ExpoSQLiteDatabase } from 'drizzle-orm/expo-sqlite';
 import * as schema from './schema';
@@ -33,6 +34,20 @@ let expoDbInstance: SQLiteDatabase | null = null;
 let dbInstance: ExpoSQLiteDatabase<typeof schema> | null = null;
 
 /**
+ * Checks if SQLite is supported in the current environment.
+ * On web, expo-sqlite requires SharedArrayBuffer (cross-origin isolation).
+ */
+export function isDatabaseSupported(): boolean {
+  if (Platform.OS === 'web') {
+    return (
+      typeof window !== 'undefined' &&
+      typeof (window as unknown as { SharedArrayBuffer?: unknown }).SharedArrayBuffer !== 'undefined'
+    );
+  }
+  return true;
+}
+
+/**
  * Initializes the local SQLite database and Drizzle ORM client.
  *
  * Guaranteed singleton: subsequent calls return the existing active database instance
@@ -47,6 +62,12 @@ export function initializeDatabase(
 ): ExpoSQLiteDatabase<typeof schema> {
   if (dbInstance && expoDbInstance) {
     return dbInstance;
+  }
+
+  if (!isDatabaseSupported()) {
+    throw new DatabaseInitializationError(
+      `SharedArrayBuffer is not available in this browser. SQLite WASM requires cross-origin isolation headers.`
+    );
   }
 
   try {

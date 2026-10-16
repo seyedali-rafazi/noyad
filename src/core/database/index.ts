@@ -7,6 +7,7 @@ export {
   getExpoDatabase,
   closeDatabase,
   isDatabaseInitialized,
+  isDatabaseSupported,
   DatabaseInitializationError,
   type AppDatabase,
   type DatabaseInitOptions,
@@ -25,3 +26,4 @@ export {
 } from './migrations/manifest';
 
 export * from './schema';
+export * from './repositories';

@@ -6,3 +6,4 @@ export * from './Badge';
 export * from './EmptyState';
 export * from './ConfirmationModal';
 export * from './TextInputField';
+export * from './ToggleSwitch';

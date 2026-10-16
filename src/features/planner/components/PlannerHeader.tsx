@@ -41,21 +41,42 @@ export const PlannerHeader: React.FC<PlannerHeaderProps> = ({
           </Text>
         </View>
 
-        {/* Settings button on the left (in Persian RTL layout) */}
-        <Pressable
-          onPress={() => router.push('/settings')}
-          hitSlop={8}
-          style={[
-            styles.iconButton,
-            {
-              backgroundColor: colors.surface,
-              borderColor: isDark ? colors.border : colors.borderLight,
-              borderRadius: radii.full,
-            },
-          ]}
-        >
-          <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
-        </Pressable>
+        {/* Top actions on the left (in Persian RTL layout) */}
+        <View style={styles.actionsRow}>
+          {/* Calendar button */}
+          <Pressable
+            onPress={() => router.push('/calendar')}
+            accessibilityLabel="تقویم شمسی"
+            hitSlop={8}
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.surface,
+                borderColor: isDark ? colors.border : colors.borderLight,
+                borderRadius: radii.full,
+              },
+            ]}
+          >
+            <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+          </Pressable>
+
+          {/* Settings button */}
+          <Pressable
+            onPress={() => router.push('/settings')}
+            accessibilityLabel="تنظیمات"
+            hitSlop={8}
+            style={[
+              styles.iconButton,
+              {
+                backgroundColor: colors.surface,
+                borderColor: isDark ? colors.border : colors.borderLight,
+                borderRadius: radii.full,
+              },
+            ]}
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -73,6 +94,11 @@ const styles = StyleSheet.create({
   },
   textColumn: {
     alignItems: 'flex-end',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   iconButton: {
     width: 40,

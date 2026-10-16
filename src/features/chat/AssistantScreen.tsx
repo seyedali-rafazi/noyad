@@ -35,17 +35,27 @@ export const AssistantScreen: React.FC = () => {
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => setIsKeyboardVisible(true)
-    );
-    const hideSub = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      () => setIsKeyboardVisible(false)
-    );
+    const handleKeyboardShow = () => {
+      setIsKeyboardVisible(true);
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    };
+
+    const handleKeyboardHide = () => {
+      setIsKeyboardVisible(false);
+    };
+
+    const willShowSub = Keyboard.addListener('keyboardWillShow', handleKeyboardShow);
+    const didShowSub = Keyboard.addListener('keyboardDidShow', handleKeyboardShow);
+    const willHideSub = Keyboard.addListener('keyboardWillHide', handleKeyboardHide);
+    const didHideSub = Keyboard.addListener('keyboardDidHide', handleKeyboardHide);
+
     return () => {
-      showSub.remove();
-      hideSub.remove();
+      willShowSub.remove();
+      didShowSub.remove();
+      willHideSub.remove();
+      didHideSub.remove();
     };
   }, []);
 
@@ -78,28 +88,33 @@ export const AssistantScreen: React.FC = () => {
     <AppScreen>
       <AppHeader
         title="دستیار هوشمند"
-        subtitle="دستیار برنامه‌ریزی روزانه و مدیریت کارها"
+        subtitle="موتور فوق‌سریع هوش مصنوعی Groq (Llama 8B)"
         rightAction={
           <View
             style={[
               styles.prototypeTag,
               {
-                backgroundColor: colors.accentSubtle,
+                backgroundColor: 'rgba(249, 115, 22, 0.14)',
                 borderRadius: radii.full,
               },
             ]}
           >
-            <Ionicons name="sparkles" size={13} color={colors.accent} />
-            <Text style={[typography.caption, { color: colors.accent, fontWeight: '700' }]}>
-              هوشمند
+            <Ionicons name="flash" size={13} color="#f97316" />
+            <Text
+              style={[
+                typography.caption,
+                { color: '#f97316', fontWeight: '700' },
+              ]}
+            >
+              Groq LPU (8B)
             </Text>
           </View>
         }
       />
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         style={styles.keyboardContainer}
       >
         {/* Messages List */}
@@ -107,11 +122,14 @@ export const AssistantScreen: React.FC = () => {
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => item.id}
+          style={styles.messageListContainer}
           contentContainerStyle={[
             styles.messageList,
             { paddingVertical: spacing.md },
           ]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ListEmptyComponent={
             <View style={[styles.emptyContainer, { paddingHorizontal: spacing.xl }]}>
               <View
@@ -184,7 +202,13 @@ export const AssistantScreen: React.FC = () => {
         />
 
         {/* Chat Composer with dynamic clearance for floating glass tab bar */}
-        <View style={{ paddingBottom: isKeyboardVisible ? 6 : tabClearance + 6 }}>
+        <View
+          style={{
+            paddingBottom: isKeyboardVisible
+              ? (Platform.OS === 'ios' ? 6 : Math.max(insets.bottom, 6))
+              : tabClearance + 6,
+          }}
+        >
           <ChatComposer onSend={sendMessage} disabled={isTyping} />
         </View>
       </KeyboardAvoidingView>
@@ -202,6 +226,9 @@ export const AssistantScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   keyboardContainer: {
+    flex: 1,
+  },
+  messageListContainer: {
     flex: 1,
   },
   prototypeTag: {

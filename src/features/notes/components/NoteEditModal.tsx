@@ -8,6 +8,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme';
@@ -173,26 +175,60 @@ export const NoteEditModal: React.FC<NoteEditModalProps> = ({
   onClose,
   onSave,
 }) => {
+  const screenHeight = Dimensions.get('window').height || 800;
+  const [slideAnim] = useState(() => new Animated.Value(screenHeight));
+  const useNativeDriver = Platform.OS !== 'web';
+
+  React.useEffect(() => {
+    if (visible) {
+      slideAnim.setValue(screenHeight);
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        damping: 26,
+        mass: 0.85,
+        stiffness: 260,
+        useNativeDriver,
+      }).start();
+    }
+  }, [visible, screenHeight, slideAnim, useNativeDriver]);
+
+  const handleClose = () => {
+    Animated.timing(slideAnim, {
+      toValue: screenHeight,
+      duration: 180,
+      useNativeDriver,
+    }).start(() => {
+      onClose();
+    });
+  };
+
   if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.backdrop}
       >
-        <Pressable style={styles.backdropTouch} onPress={onClose} />
-        <NoteForm
-          key={note ? note.id : 'new-note'}
-          note={note}
-          onClose={onClose}
-          onSave={onSave}
-        />
+        <Pressable style={styles.backdropTouch} onPress={handleClose} />
+        <Animated.View
+          style={[
+            styles.animatedContainer,
+            { transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <NoteForm
+            key={note ? note.id : 'new-note'}
+            note={note}
+            onClose={handleClose}
+            onSave={onSave}
+          />
+        </Animated.View>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -207,8 +243,13 @@ const styles = StyleSheet.create({
   backdropTouch: {
     flex: 1,
   },
-  sheet: {
+  animatedContainer: {
+    width: '100%',
     maxHeight: '88%',
+  },
+  sheet: {
+    width: '100%',
+    maxHeight: '100%',
     borderTopWidth: 1,
   },
   headerRow: {

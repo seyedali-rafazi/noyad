@@ -25,8 +25,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const handleBack = () => {
     if (onBackPress) {
       onBackPress();
-    } else {
-      router.back();
+      return;
+    }
+    try {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch {
+      router.replace('/(tabs)');
     }
   };
 
