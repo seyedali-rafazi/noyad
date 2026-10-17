@@ -228,18 +228,13 @@ export const CalendarScreen: React.FC = () => {
       <TaskEditModal
         visible={isEditModalVisible}
         task={editingTask}
+        initialDate={selectedDate}
         onClose={() => setIsEditModalVisible(false)}
         onSave={(data) => {
           if (editingTask) {
             updateTask(editingTask.id, data);
           } else {
-            // Schedule task on the currently selected calendar date
-            const d = new Date(selectedDate);
-            d.setHours(12, 0, 0, 0);
-            addTask({
-              ...data,
-              dueDate: d.toISOString(),
-            });
+            addTask(data);
           }
         }}
       />

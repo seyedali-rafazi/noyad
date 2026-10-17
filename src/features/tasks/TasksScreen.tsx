@@ -191,6 +191,7 @@ export const TasksScreen: React.FC = () => {
       <TaskEditModal
         visible={isEditModalVisible}
         task={editingTask}
+        initialDate={new Date()}
         onClose={() => setIsEditModalVisible(false)}
         onSave={(data) => {
           if (editingTask) {

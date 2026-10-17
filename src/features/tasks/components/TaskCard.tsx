@@ -38,7 +38,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const overdue = task.dueDate && !isCompleted ? checkIsOverdue(task.dueDate) : false;
 
   const dueLabel = task.dueDate
-    ? `${getRelativeJalaliLabel(task.dueDate)} ${formatPersianTime(task.dueDate)}`
+    ? task.isAllDay
+      ? `${getRelativeJalaliLabel(task.dueDate)} (تمام روز)`
+      : `${getRelativeJalaliLabel(task.dueDate)} ${formatPersianTime(task.dueDate)}`
     : null;
 
   const handleToggle = () => {

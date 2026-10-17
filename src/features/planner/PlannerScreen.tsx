@@ -204,6 +204,7 @@ export const PlannerScreen: React.FC = () => {
       <TaskEditModal
         visible={isEditModalVisible}
         task={editingTask}
+        initialDate={selectedDate}
         onClose={() => setIsEditModalVisible(false)}
         onSave={(data) => {
           if (editingTask) {

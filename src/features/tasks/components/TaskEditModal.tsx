@@ -17,10 +17,18 @@ import { Task } from '../../../domain/models/task';
 import { TaskPriority, TASK_PRIORITIES } from '../../../domain/types/common';
 import { Button } from '../../../shared/components/Button';
 import { TextInputField } from '../../../shared/components/TextInputField';
+import {
+  formatJalaliFullDate,
+  isSameJalaliDay,
+  addJalaliDays,
+} from '../../../core/calendar';
+import { TaskDatePicker } from './TaskDatePicker';
+import { ScrollTimePicker } from './ScrollTimePicker';
 
-interface TaskEditModalProps {
+export interface TaskEditModalProps {
   visible: boolean;
   task?: Task | null;
+  initialDate?: Date;
   onClose: () => void;
   onSave: (data: {
     title: string;
@@ -33,18 +41,53 @@ interface TaskEditModalProps {
 
 const TaskForm: React.FC<{
   task?: Task | null;
+  initialDate?: Date;
   onClose: () => void;
   onSave: TaskEditModalProps['onSave'];
-}> = ({ task, onClose, onSave }) => {
-  const { colors, radii, spacing, typography, isDark } = useTheme();
+}> = ({ task, initialDate, onClose, onSave }) => {
+  const { colors, radii, spacing, typography, fonts, isDark } = useTheme();
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'medium');
-  const [dateChoice, setDateChoice] = useState<'today' | 'tomorrow' | 'none'>(
-    task?.dueDate ? 'today' : 'none'
+
+  // Initial date & time logic
+  const initialBaseDate = task?.dueDate
+    ? new Date(task.dueDate)
+    : initialDate ?? new Date();
+
+  const [hasDueDate, setHasDueDate] = useState<boolean>(
+    task ? task.dueDate !== null : true
   );
+  const [selectedDate, setSelectedDate] = useState<Date>(initialBaseDate);
+  const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
+
+  const [hasSpecificTime, setHasSpecificTime] = useState<boolean>(
+    task ? task.dueDate !== null && !task.isAllDay : true
+  );
+
+  const [selectedHour, setSelectedHour] = useState<number>(() => {
+    if (task?.dueDate) {
+      return new Date(task.dueDate).getHours();
+    }
+    return 10;
+  });
+
+  const [selectedMinute, setSelectedMinute] = useState<number>(() => {
+    if (task?.dueDate) {
+      return new Date(task.dueDate).getMinutes();
+    }
+    return 0;
+  });
+
   const [error, setError] = useState('');
+
+  const isTodaySelected =
+    hasDueDate && isSameJalaliDay(selectedDate, new Date());
+  const isTomorrowSelected =
+    hasDueDate && isSameJalaliDay(selectedDate, addJalaliDays(new Date(), 1));
+  const isCustomSelected =
+    hasDueDate && !isTodaySelected && !isTomorrowSelected;
 
   const handleSave = () => {
     if (!title.trim()) {
@@ -53,14 +96,17 @@ const TaskForm: React.FC<{
     }
 
     let dueDateIso: string | null = null;
-    if (dateChoice === 'today') {
-      const d = new Date();
-      d.setHours(18, 0, 0, 0);
-      dueDateIso = d.toISOString();
-    } else if (dateChoice === 'tomorrow') {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      d.setHours(10, 0, 0, 0);
+    let isAllDay = false;
+
+    if (hasDueDate) {
+      const d = new Date(selectedDate);
+      if (hasSpecificTime) {
+        d.setHours(selectedHour, selectedMinute, 0, 0);
+        isAllDay = false;
+      } else {
+        d.setHours(12, 0, 0, 0);
+        isAllDay = true;
+      }
       dueDateIso = d.toISOString();
     }
 
@@ -69,7 +115,7 @@ const TaskForm: React.FC<{
       description: description.trim() || undefined,
       dueDate: dueDateIso,
       priority,
-      isAllDay: false,
+      isAllDay,
     });
     onClose();
   };
@@ -89,7 +135,9 @@ const TaskForm: React.FC<{
           backgroundColor: colors.surface,
           borderTopLeftRadius: radii.xl,
           borderTopRightRadius: radii.xl,
-          padding: spacing.xl,
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.xl,
           borderColor: isDark ? colors.border : colors.borderLight,
         },
       ]}
@@ -99,12 +147,17 @@ const TaskForm: React.FC<{
         <Pressable onPress={onClose} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textSecondary} />
         </Pressable>
-        <Text style={[typography.titleSmall, { color: colors.textPrimary }]}>
+        <Text
+          style={[
+            typography.titleSmall,
+            { color: colors.textPrimary, fontFamily: fonts.bold },
+          ]}
+        >
           {task ? 'ویرایش تسک' : 'افزودن تسک جدید'}
         </Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 16 }}>
         {/* Title */}
         <TextInputField
           label="عنوان تسک *"
@@ -126,7 +179,7 @@ const TaskForm: React.FC<{
           onChangeText={setDescription}
           multiline
           numberOfLines={3}
-          style={{ minHeight: 70, textAlignVertical: 'top' }}
+          style={{ minHeight: 65, textAlignVertical: 'top' }}
           containerStyle={{ marginBottom: spacing.base }}
         />
 
@@ -134,7 +187,12 @@ const TaskForm: React.FC<{
         <Text
           style={[
             typography.caption,
-            { color: colors.textSecondary, textAlign: 'right', marginBottom: 8, fontWeight: '600' },
+            {
+              color: colors.textSecondary,
+              textAlign: 'right',
+              marginBottom: 8,
+              fontWeight: '600',
+            },
           ]}
         >
           اولویت
@@ -151,6 +209,12 @@ const TaskForm: React.FC<{
                   {
                     backgroundColor: selected ? colors.accent : colors.surfaceRaised,
                     borderRadius: radii.md,
+                    borderColor: selected
+                      ? colors.accent
+                      : isDark
+                      ? colors.border
+                      : colors.borderLight,
+                    borderWidth: 1,
                   },
                 ]}
               >
@@ -170,7 +234,7 @@ const TaskForm: React.FC<{
           })}
         </View>
 
-        {/* Date Choice */}
+        {/* Date Selection Section */}
         <Text
           style={[
             typography.caption,
@@ -183,44 +247,292 @@ const TaskForm: React.FC<{
             },
           ]}
         >
-          زمان سررسید
+          تاریخ سررسید
         </Text>
+
+        {/* Quick Date Presets Row */}
         <View style={styles.segmentedRow}>
-          {(['today', 'tomorrow', 'none'] as const).map((choice) => {
-            const selected = dateChoice === choice;
-            const label =
-              choice === 'today'
-                ? 'امروز'
-                : choice === 'tomorrow'
-                ? 'فردا'
-                : 'بدون سررسید';
-            return (
-              <Pressable
-                key={choice}
-                onPress={() => setDateChoice(choice)}
+          <Pressable
+            onPress={() => {
+              setHasDueDate(true);
+              setSelectedDate(new Date());
+              setIsCalendarOpen(false);
+            }}
+            style={[
+              styles.segmentItem,
+              {
+                backgroundColor: isTodaySelected ? colors.accent : colors.surfaceRaised,
+                borderRadius: radii.md,
+                borderColor: isTodaySelected
+                  ? colors.accent
+                  : isDark
+                  ? colors.border
+                  : colors.borderLight,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                typography.bodySmall,
+                {
+                  color: isTodaySelected ? '#FFFFFF' : colors.textPrimary,
+                  fontWeight: isTodaySelected ? '700' : '500',
+                },
+              ]}
+            >
+              امروز
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setHasDueDate(true);
+              setSelectedDate(addJalaliDays(new Date(), 1));
+              setIsCalendarOpen(false);
+            }}
+            style={[
+              styles.segmentItem,
+              {
+                backgroundColor: isTomorrowSelected ? colors.accent : colors.surfaceRaised,
+                borderRadius: radii.md,
+                borderColor: isTomorrowSelected
+                  ? colors.accent
+                  : isDark
+                  ? colors.border
+                  : colors.borderLight,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                typography.bodySmall,
+                {
+                  color: isTomorrowSelected ? '#FFFFFF' : colors.textPrimary,
+                  fontWeight: isTomorrowSelected ? '700' : '500',
+                },
+              ]}
+            >
+              فردا
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setHasDueDate(true);
+              setIsCalendarOpen((prev) => !prev);
+            }}
+            style={[
+              styles.segmentItem,
+              {
+                backgroundColor:
+                  isCustomSelected || isCalendarOpen
+                    ? colors.accent
+                    : colors.surfaceRaised,
+                borderRadius: radii.md,
+                borderColor:
+                  isCustomSelected || isCalendarOpen
+                    ? colors.accent
+                    : isDark
+                    ? colors.border
+                    : colors.borderLight,
+                borderWidth: 1,
+                flexDirection: 'row-reverse',
+                gap: 4,
+              },
+            ]}
+          >
+            <Ionicons
+              name="calendar-outline"
+              size={14}
+              color={
+                isCustomSelected || isCalendarOpen ? '#FFFFFF' : colors.textPrimary
+              }
+            />
+            <Text
+              style={[
+                typography.bodySmall,
+                {
+                  color:
+                    isCustomSelected || isCalendarOpen
+                      ? '#FFFFFF'
+                      : colors.textPrimary,
+                  fontWeight: isCustomSelected || isCalendarOpen ? '700' : '500',
+                },
+              ]}
+            >
+              تقویم
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setHasDueDate(false);
+              setIsCalendarOpen(false);
+            }}
+            style={[
+              styles.segmentItem,
+              {
+                backgroundColor: !hasDueDate ? colors.accent : colors.surfaceRaised,
+                borderRadius: radii.md,
+                borderColor: !hasDueDate
+                  ? colors.accent
+                  : isDark
+                  ? colors.border
+                  : colors.borderLight,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                typography.bodySmall,
+                {
+                  color: !hasDueDate ? '#FFFFFF' : colors.textPrimary,
+                  fontWeight: !hasDueDate ? '700' : '500',
+                },
+              ]}
+            >
+              بدون تاریخ
+            </Text>
+          </Pressable>
+        </View>
+
+        {/* Selected Date Summary & Calendar Expand */}
+        {hasDueDate && (
+          <Pressable
+            onPress={() => setIsCalendarOpen((prev) => !prev)}
+            style={[
+              styles.selectedDateBanner,
+              {
+                backgroundColor: colors.surfaceRaised,
+                borderRadius: radii.md,
+                borderColor: isDark ? colors.border : colors.borderLight,
+                marginTop: spacing.sm,
+              },
+            ]}
+          >
+            <View style={styles.dateLabelRow}>
+              <Ionicons name="calendar" size={16} color={colors.accent} />
+              <Text
                 style={[
-                  styles.segmentItem,
+                  typography.caption,
                   {
-                    backgroundColor: selected ? colors.accent : colors.surfaceRaised,
-                    borderRadius: radii.md,
+                    fontFamily: fonts.bold,
+                    color: colors.textPrimary,
+                    marginRight: 6,
                   },
                 ]}
               >
-                <Text
+                {formatJalaliFullDate(selectedDate)}
+              </Text>
+            </View>
+            <View style={styles.dateActionRow}>
+              <Text style={[typography.caption, { color: colors.accent, fontWeight: '600' }]}>
+                {isCalendarOpen ? 'بستن تقویم' : 'تغییر از تقویم'}
+              </Text>
+              <Ionicons
+                name={isCalendarOpen ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                color={colors.accent}
+              />
+            </View>
+          </Pressable>
+        )}
+
+        {/* Interactive Calendar Grid */}
+        {hasDueDate && isCalendarOpen && (
+          <TaskDatePicker
+            selectedDate={selectedDate}
+            onSelectDate={(newDate) => {
+              setSelectedDate(newDate);
+            }}
+          />
+        )}
+
+        {/* Time Selector Section */}
+        {hasDueDate && (
+          <View style={{ marginTop: spacing.md }}>
+            <View style={styles.timeSectionHeader}>
+              <View style={styles.timeTypeSwitch}>
+                <Pressable
+                  onPress={() => setHasSpecificTime(true)}
                   style={[
-                    typography.bodySmall,
+                    styles.timeTypePill,
                     {
-                      color: selected ? '#FFFFFF' : colors.textPrimary,
-                      fontWeight: selected ? '700' : '500',
+                      backgroundColor: hasSpecificTime
+                        ? colors.accent
+                        : colors.surfaceRaised,
+                      borderRadius: radii.full,
                     },
                   ]}
                 >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+                  <Text
+                    style={[
+                      typography.caption,
+                      {
+                        color: hasSpecificTime ? '#FFFFFF' : colors.textSecondary,
+                        fontWeight: hasSpecificTime ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    ساعت مشخص
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setHasSpecificTime(false)}
+                  style={[
+                    styles.timeTypePill,
+                    {
+                      backgroundColor: !hasSpecificTime
+                        ? colors.accent
+                        : colors.surfaceRaised,
+                      borderRadius: radii.full,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      typography.caption,
+                      {
+                        color: !hasSpecificTime ? '#FFFFFF' : colors.textSecondary,
+                        fontWeight: !hasSpecificTime ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    تمام روز
+                  </Text>
+                </Pressable>
+              </View>
+
+              <Text
+                style={[
+                  typography.caption,
+                  {
+                    color: colors.textSecondary,
+                    textAlign: 'right',
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                زمان انجام
+              </Text>
+            </View>
+
+            {/* Scrollable Time Picker Wheel */}
+            {hasSpecificTime && (
+              <View style={{ marginTop: 10 }}>
+                <ScrollTimePicker
+                  selectedHour={selectedHour}
+                  selectedMinute={selectedMinute}
+                  onChangeHour={setSelectedHour}
+                  onChangeMinute={setSelectedMinute}
+                />
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Action Buttons */}
         <View style={[styles.actionRow, { marginTop: spacing.xl }]}>
@@ -247,6 +559,7 @@ const TaskForm: React.FC<{
 export const TaskEditModal: React.FC<TaskEditModalProps> = ({
   visible,
   task,
+  initialDate,
   onClose,
   onSave,
 }) => {
@@ -300,6 +613,7 @@ export const TaskEditModal: React.FC<TaskEditModalProps> = ({
           <TaskForm
             key={task ? task.id : 'new-task'}
             task={task}
+            initialDate={initialDate}
             onClose={handleClose}
             onSave={onSave}
           />
@@ -320,7 +634,7 @@ const styles = StyleSheet.create({
   },
   animatedContainer: {
     width: '100%',
-    maxHeight: '85%',
+    maxHeight: '92%',
   },
   sheet: {
     width: '100%',
@@ -331,17 +645,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   segmentedRow: {
     flexDirection: 'row-reverse',
-    gap: 8,
+    gap: 6,
   },
   segmentItem: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 9,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  selectedDateBanner: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+  },
+  dateLabelRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+  },
+  dateActionRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeSectionHeader: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  timeTypeSwitch: {
+    flexDirection: 'row-reverse',
+    gap: 4,
+  },
+  timeTypePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   actionRow: {
     flexDirection: 'row-reverse',

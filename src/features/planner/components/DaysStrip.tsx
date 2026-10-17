@@ -28,30 +28,32 @@ export const DaysStrip: React.FC<DaysStripProps> = ({
   const [contentWidth, setContentWidth] = useState<number>(0);
   const isInitialScrollDone = useRef(false);
 
-  // Symmetrical 15 days in past + today + 15 days in future (total 31 days)
-  // Today is at the exact center (index 15)
+  // Generous 25 days in past + today + 25 days in future (total 51 days)
   const days = useMemo(
-    () => getHorizontalDaysStrip(new Date(), 15, 15, selectedDate),
+    () => getHorizontalDaysStrip(new Date(), 25, 25, selectedDate),
     [selectedDate]
   );
 
   const centerDate = useCallback(
     (targetDate: Date, animated = true) => {
       if (!scrollViewRef.current || viewWidth <= 0 || contentWidth <= 0) return;
-      const todayIdx = 15;
       const targetIdx = days.findIndex((d) => isSameJalaliDay(d.date, targetDate));
-      const idx = targetIdx !== -1 ? targetIdx : todayIdx;
+      if (targetIdx === -1) return;
 
-      // In row-reverse, index 15 (Today) is at the exact center of total content
-      const midScrollX = (contentWidth - viewWidth) / 2;
-      const deltaIdx = idx - todayIdx;
-      const targetX = midScrollX + deltaIdx * ITEM_FULL_WIDTH;
+      const padding = spacing.base;
+      // In row-reverse layout:
+      // Index 0 (farthest past) is at the far right.
+      // Index days.length - 1 (farthest future) is at the far left (x = 0).
+      // Distance of item targetIdx center from left edge (x = 0):
+      const itemDistanceFromLeft =
+        padding + (days.length - 1 - targetIdx + 0.5) * ITEM_FULL_WIDTH;
+      const targetX = itemDistanceFromLeft - viewWidth / 2;
       const maxScroll = Math.max(0, contentWidth - viewWidth);
       const clampedX = Math.max(0, Math.min(maxScroll, targetX));
 
       scrollViewRef.current.scrollTo({ x: clampedX, animated });
     },
-    [days, viewWidth, contentWidth]
+    [days, viewWidth, contentWidth, spacing.base]
   );
 
   // Auto-center whenever date or measured widths change
@@ -82,8 +84,7 @@ export const DaysStrip: React.FC<DaysStripProps> = ({
           setContentWidth(w);
           if (!isInitialScrollDone.current && w > 0 && viewWidth > 0) {
             isInitialScrollDone.current = true;
-            const mid = Math.max(0, (w - viewWidth) / 2);
-            scrollViewRef.current?.scrollTo({ x: mid, animated: false });
+            centerDate(selectedDate, false);
           }
         }}
         contentContainerStyle={[styles.scrollContent, { paddingHorizontal: spacing.base }]}
@@ -95,7 +96,10 @@ export const DaysStrip: React.FC<DaysStripProps> = ({
           return (
             <Pressable
               key={idx}
-              onPress={() => onSelectDate(dayItem.date)}
+              onPress={() => {
+                onSelectDate(dayItem.date);
+                centerDate(dayItem.date, true);
+              }}
               style={[
                 styles.dayPill,
                 {

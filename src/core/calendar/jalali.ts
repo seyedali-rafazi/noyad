@@ -356,7 +356,9 @@ export function isOverdue(dateInput: Date | string, referenceDate: Date = new Da
   return isBefore(target, referenceDate) && !isSameDay(target, referenceDate);
 }
 
-/**
- * Checks whether two dates represent the same Jalali day.
- */
-export { isSameDay as isSameJalaliDay, addMonths as addJalaliMonths, subMonths as subJalaliMonths };
+export {
+  isSameDay as isSameJalaliDay,
+  addMonths as addJalaliMonths,
+  subMonths as subJalaliMonths,
+  addDays as addJalaliDays,
+};
