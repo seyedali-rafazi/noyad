@@ -166,10 +166,23 @@ export const AssistantScreen: React.FC = () => {
               <View style={[styles.typingRow, { paddingHorizontal: spacing.base }]}>
                 <View
                   style={[
+                    styles.avatar,
+                    {
+                      backgroundColor: colors.accentSubtle,
+                      borderRadius: radii.full,
+                      marginRight: 8,
+                    },
+                  ]}
+                >
+                  <Ionicons name="sparkles" size={14} color={colors.accent} />
+                </View>
+                <View
+                  style={[
                     styles.typingBubble,
                     {
                       backgroundColor: isDark ? colors.surfaceRaised : colors.surface,
                       borderRadius: radii.lg,
+                      borderTopLeftRadius: radii.xs,
                       borderColor: isDark ? colors.border : colors.borderLight,
                       padding: spacing.sm,
                     },
@@ -177,7 +190,7 @@ export const AssistantScreen: React.FC = () => {
                 >
                   <ActivityIndicator size="small" color={colors.accent} />
                   <Text
-                    style={[typography.caption, { color: colors.textSecondary, marginRight: 8 }]}
+                    style={[typography.caption, { color: colors.textSecondary, marginLeft: 8 }]}
                   >
                     دستیار در حال پاسخ است...
                   </Text>
@@ -245,13 +258,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   typingRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     marginVertical: 4,
   },
   typingBubble: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
+  },
+  avatar: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

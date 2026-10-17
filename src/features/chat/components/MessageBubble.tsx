@@ -25,7 +25,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       style={[
         styles.container,
         {
-          alignItems: isUser ? 'flex-start' : 'flex-end', // in RTL, user is left, assistant is right
+          alignItems: isUser ? 'flex-end' : 'flex-start',
           marginVertical: spacing.xs + 2,
           paddingHorizontal: spacing.base,
         },
@@ -57,8 +57,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 ? colors.surfaceRaised
                 : colors.surface,
               borderRadius: radii.lg,
-              borderTopRightRadius: !isUser ? radii.xs : radii.lg,
-              borderTopLeftRadius: isUser ? radii.xs : radii.lg,
+              borderTopRightRadius: isUser ? radii.xs : radii.lg,
+              borderTopLeftRadius: !isUser ? radii.xs : radii.lg,
               padding: spacing.md,
               borderColor: isUser
                 ? 'transparent'
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   bubbleRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     alignItems: 'flex-start',
     maxWidth: '88%',
   },
