@@ -1,13 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useTheme, ThemePreference } from '../../shared/theme';
 import { AppScreen } from '../../shared/components/AppScreen';
 import { AppHeader } from '../../shared/components/AppHeader';
@@ -16,10 +9,11 @@ import { TextInputField } from '../../shared/components/TextInputField';
 import { Button } from '../../shared/components/Button';
 import { ToggleSwitch } from '../../shared/components/ToggleSwitch';
 import { DEFAULT_TIMEZONE } from '../../core/calendar';
-import { useAiSettingsStore, GROQ_MODEL_NAME } from '../../core/ai/aiSettingsStore';
+import { useAiSettingsStore } from '../../core/ai/aiSettingsStore';
+import { useScreenModalAnimation } from '../../shared/hooks';
 
 export const SettingsScreen: React.FC = () => {
-  const router = useRouter();
+  const { handleClose: handleBack, animatedStyle } = useScreenModalAnimation();
   const { colors, radii, spacing, typography, themePreference, setThemePreference, isDark } =
     useTheme();
 
@@ -28,11 +22,11 @@ export const SettingsScreen: React.FC = () => {
   const [taskReminders, setTaskReminders] = useState(true);
 
   // Groq AI Settings state
-  const keys = useAiSettingsStore((s) => s.keys);
-  const loadKeys = useAiSettingsStore((s) => s.loadKeys);
-  const addKey = useAiSettingsStore((s) => s.addKey);
-  const removeKey = useAiSettingsStore((s) => s.removeKey);
-  const resetKeyStatuses = useAiSettingsStore((s) => s.resetKeyStatuses);
+  const keys = useAiSettingsStore(s => s.keys);
+  const loadKeys = useAiSettingsStore(s => s.loadKeys);
+  const addKey = useAiSettingsStore(s => s.addKey);
+  const removeKey = useAiSettingsStore(s => s.removeKey);
+  const resetKeyStatuses = useAiSettingsStore(s => s.resetKeyStatuses);
 
   const [newKeyInput, setNewKeyInput] = useState('');
   const [newKeyLabel, setNewKeyLabel] = useState('');
@@ -69,9 +63,13 @@ export const SettingsScreen: React.FC = () => {
     setTimeout(() => setActionFeedback(null), 3000);
   };
 
-  const hasExhaustedKey = keys.some((k) => k.status === 'exhausted');
+  const hasExhaustedKey = keys.some(k => k.status === 'exhausted');
 
-  const themeOptions: { key: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  const themeOptions: {
+    key: ThemePreference;
+    label: string;
+    icon: keyof typeof Ionicons.glyphMap;
+  }[] = [
     { key: 'light', label: 'روشن', icon: 'sunny-outline' },
     { key: 'dark', label: 'تیره', icon: 'moon-outline' },
     { key: 'system', label: 'سیستم', icon: 'phone-portrait-outline' },
@@ -88,21 +86,10 @@ export const SettingsScreen: React.FC = () => {
     return `${key.slice(0, 6)}••••••••${key.slice(-4)}`;
   };
 
-  const handleBack = () => {
-    try {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)');
-      }
-    } catch {
-      router.replace('/(tabs)');
-    }
-  };
-
   return (
-    <AppScreen>
-      <AppHeader title="تنظیمات" showBack onBackPress={handleBack} />
+    <AppScreen style={{ backgroundColor: 'transparent' }}>
+      <Animated.View style={[animatedStyle, { backgroundColor: colors.background, flex: 1 }]}>
+        <AppHeader title="تنظیمات" showBack onBackPress={handleBack} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -125,7 +112,7 @@ export const SettingsScreen: React.FC = () => {
         </Text>
         <Card variant="flat" style={{ padding: spacing.md }}>
           <View style={styles.themeOptionsRow}>
-            {themeOptions.map((opt) => {
+            {themeOptions.map(opt => {
               const isSelected = themePreference === opt.key;
               return (
                 <Pressable
@@ -176,71 +163,22 @@ export const SettingsScreen: React.FC = () => {
             },
           ]}
         >
-          هوش مصنوعی و کلید ارتباطی (Groq LPU)
+          هوش مصنوعی (Groq)
         </Text>
         <Card variant="flat" style={{ padding: spacing.base }}>
-          {/* Active Model Banner */}
-          <View
-            style={[
-              styles.modelInfoBanner,
-              {
-                backgroundColor: isDark ? 'rgba(234, 88, 12, 0.12)' : 'rgba(234, 88, 12, 0.08)',
-                borderColor: 'rgba(234, 88, 12, 0.25)',
-                borderRadius: radii.md,
-                padding: spacing.md,
-                marginBottom: spacing.md,
-              },
-            ]}
-          >
-            <View style={styles.modelHeaderRow}>
-              <View
-                style={[
-                  styles.providerBadge,
-                  {
-                    backgroundColor: '#ea580c',
-                    borderRadius: radii.full,
-                  },
-                ]}
-              >
-                <Ionicons name="flash" size={12} color="#FFFFFF" />
-                <Text style={[typography.caption, { color: '#FFFFFF', fontWeight: '700', fontSize: 11 }]}>
-                  Groq LPU
-                </Text>
-              </View>
-
-              <Text
-                style={[
-                  typography.titleSmall,
-                  { color: colors.textPrimary, fontWeight: '700' },
-                ]}
-              >
-                مدل فوق‌سریع ۸ میلیاردی
-              </Text>
-            </View>
-
-            <Text
-              style={[
-                typography.bodySmall,
-                { color: colors.textSecondary, textAlign: 'right', marginTop: 8, lineHeight: 20 },
-              ]}
-            >
-              مدل فعال: <Text style={{ color: colors.textPrimary, fontWeight: '700' }}>{GROQ_MODEL_NAME}</Text>
-              {'\n'}پاسخ‌دهی آنی و بی‌درنگ با هوش مصنوعی متن‌باز بر روی تراشه‌های پرسرعت LPU گرواک.
-            </Text>
-          </View>
-
           <Text
             style={[
               typography.bodySmall,
               {
                 color: colors.textSecondary,
                 textAlign: 'right',
-                lineHeight: 20,
                 marginBottom: spacing.md,
+                lineHeight: 20,
               },
             ]}
           >
-            می‌توانید یک یا چند کلید اختصاصی Groq وارد کنید. برنامه در صورت اتمام سهمیه (Rate Limit) هر کلید، به صورت خودکار به کلید بعدی سوئیچ خواهد کرد. (کلید رایگان خود را از console.groq.com/keys دریافت فرمایید)
+            برای فعال‌سازی دستیار هوشمند، کلید API خود را وارد کنید (دریافت کلید رایگان از
+            console.groq.com).
           </Text>
 
           {/* Input for new key */}
@@ -249,18 +187,14 @@ export const SettingsScreen: React.FC = () => {
               label="کلید API جدید گرواک (Groq):"
               placeholder="مثال: gsk_..."
               value={newKeyInput}
-              onChangeText={(text) => {
+              onChangeText={text => {
                 setNewKeyInput(text);
                 if (keyInputError) setKeyInputError(null);
               }}
               secureTextEntry={isSecure}
               error={keyInputError ?? undefined}
             />
-            <Pressable
-              onPress={() => setIsSecure(!isSecure)}
-              style={styles.eyeToggle}
-              hitSlop={8}
-            >
+            <Pressable onPress={() => setIsSecure(!isSecure)} style={styles.eyeToggle} hitSlop={8}>
               <Ionicons
                 name={isSecure ? 'eye-outline' : 'eye-off-outline'}
                 size={18}
@@ -271,7 +205,7 @@ export const SettingsScreen: React.FC = () => {
 
           <TextInputField
             label="برچسب اختیاری برای شناسایی:"
-            placeholder="مثلاً: کلید اول یا حساب کاری گرواک"
+            placeholder="مثلاً: کلید اصلی"
             value={newKeyLabel}
             onChangeText={setNewKeyLabel}
             containerStyle={{ marginTop: spacing.xs }}
@@ -279,11 +213,11 @@ export const SettingsScreen: React.FC = () => {
 
           <View style={{ marginTop: spacing.md }}>
             <Button
-              title="افزودن کلید به چرخه پردازش Groq"
+              title="افزودن کلید"
               onPress={handleAddKey}
-              variant="secondary"
+              variant="primary"
               size="md"
-              style={{ backgroundColor: '#ea580c' }}
+              style={{ backgroundColor: colors.accent }}
               icon={<Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />}
             />
           </View>
@@ -372,8 +306,8 @@ export const SettingsScreen: React.FC = () => {
                             backgroundColor: isActive
                               ? colors.successSubtle
                               : isExhausted
-                              ? colors.warningSubtle
-                              : colors.dangerSubtle,
+                                ? colors.warningSubtle
+                                : colors.dangerSubtle,
                             borderRadius: radii.full,
                           },
                         ]}
@@ -385,8 +319,8 @@ export const SettingsScreen: React.FC = () => {
                               color: isActive
                                 ? colors.success
                                 : isExhausted
-                                ? colors.warning
-                                : colors.danger,
+                                  ? colors.warning
+                                  : colors.danger,
                               fontWeight: '700',
                               fontSize: 10,
                             },
@@ -461,7 +395,7 @@ export const SettingsScreen: React.FC = () => {
             آغاز هفته در تقویم:
           </Text>
           <View style={styles.optionsList}>
-            {weekStartOptions.map((opt) => {
+            {weekStartOptions.map(opt => {
               const isSelected = weekStart === opt.key;
               return (
                 <Pressable
@@ -532,15 +466,16 @@ export const SettingsScreen: React.FC = () => {
         </Text>
         <Card variant="flat" style={{ padding: spacing.md }}>
           <View style={styles.switchRow}>
-            <ToggleSwitch
-              value={dailyBriefing}
-              onValueChange={setDailyBriefing}
-            />
+            <ToggleSwitch value={dailyBriefing} onValueChange={setDailyBriefing} />
             <View style={styles.switchTextCol}>
-              <Text style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}>
+              <Text
+                style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
+              >
                 خلاصه برنامه صبحگاهی
               </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}>
+              <Text
+                style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
+              >
                 ارسال اعلان مرور کارهای روزانه در ساعت ۸:۰۰ صبح
               </Text>
             </View>
@@ -557,15 +492,16 @@ export const SettingsScreen: React.FC = () => {
               },
             ]}
           >
-            <ToggleSwitch
-              value={taskReminders}
-              onValueChange={setTaskReminders}
-            />
+            <ToggleSwitch value={taskReminders} onValueChange={setTaskReminders} />
             <View style={styles.switchTextCol}>
-              <Text style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}>
+              <Text
+                style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
+              >
                 یادآور سررسید تسک‌ها
               </Text>
-              <Text style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}>
+              <Text
+                style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
+              >
                 ارسال هشدار قبل از فرارسیدن موعد انجام کار
               </Text>
             </View>
@@ -585,7 +521,7 @@ export const SettingsScreen: React.FC = () => {
             },
           ]}
         >
-          اطلاعات سامانه و وضعیت ادغام
+          اطلاعات سامانه
         </Text>
         <Card
           variant="subtle"
@@ -603,11 +539,11 @@ export const SettingsScreen: React.FC = () => {
               ]}
             >
               <Text style={[typography.caption, { color: colors.success, fontWeight: '700' }]}>
-                دیتابیس محلی فعال
+                فعال
               </Text>
             </View>
             <Text style={[typography.titleSmall, { color: colors.textPrimary }]}>
-              وضعیت ادغام هوش مصنوعی و دیتابیس
+              وضعیت ذخیره‌سازی محلی
             </Text>
           </View>
 
@@ -617,12 +553,12 @@ export const SettingsScreen: React.FC = () => {
               { color: colors.textSecondary, textAlign: 'right', marginTop: 8, lineHeight: 20 },
             ]}
           >
-            • داده‌های تسک‌ها و یادداشت‌ها به صورت دائمی در دیتابیس محلی SQLite ذخیره می‌شوند.
-            {'\n'}• موتور هوش مصنوعی Groq (مدل ۸ میلیاردی Llama 3.1) با چرخش خودکار کلیدها (Failover) فعال است.
-            {'\n'}• تمامی محاسبات تقویم بر مبنای تقویم جلالی (date-fns-jalali) و منطقه زمانی تهران انجام می‌شود.
+            • داده‌های تسک‌ها و یادداشت‌ها به صورت دائمی در دیتابیس محلی ذخیره می‌شوند.
+            {'\n'}• تمامی محاسبات تاریخ و زمان بر مبنای تقویم جلالی انجام می‌شود.
           </Text>
         </Card>
       </ScrollView>
+      </Animated.View>
     </AppScreen>
   );
 };
@@ -672,21 +608,6 @@ const styles = StyleSheet.create({
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 2,
-  },
-  modelInfoBanner: {
-    borderWidth: 1,
-  },
-  modelHeaderRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  providerBadge: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    gap: 4,
   },
   savedKeysHeader: {
     flexDirection: 'row-reverse',

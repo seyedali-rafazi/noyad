@@ -7,7 +7,7 @@ import { usePlannerStore } from '../src/features/planner/plannerStore';
 // Mock global fetch
 const originalFetch = globalThis.fetch;
 
-describe('Groq 8B AI Engine & Assistant Action Tests', () => {
+describe('Groq AI Engine & Assistant Action Tests', () => {
   beforeEach(() => {
     // Reset Zustand store state
     useAiSettingsStore.setState({
@@ -71,7 +71,7 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
     });
   });
 
-  describe('Groq (Llama 3.1 8B Instant) Failover & Invocation', () => {
+  describe('Groq (GPT 20B) Failover & Invocation', () => {
     it('returns guidance message when no Groq API keys are registered', async () => {
       const client = new GroqClient();
       const response = await client.generateResponse('سلام من برنامه جدید می‌خوام');
@@ -82,7 +82,7 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
       expect(response.reply).toContain('کلید API گرواک (Groq) ثبت نشده است');
     });
 
-    it('successfully calls Groq OpenAI-compatible endpoint with Bearer auth and 8B model', async () => {
+    it('successfully calls Groq OpenAI-compatible endpoint with Bearer auth and GPT 20B model', async () => {
       const store = useAiSettingsStore.getState();
       await store.addKey('gsk_validKeyTest123', 'کلید گرواک سالم');
 
@@ -175,10 +175,40 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
       const key = useAiSettingsStore.getState().keys.find((k) => k.apiKey === 'gsk_invalidKey');
       expect(key?.status).toBe('invalid');
     });
+
+    it('recovers cleanly when Groq returns 400 tool_use_failed with failed_generation', async () => {
+      const store = useAiSettingsStore.getState();
+      await store.addKey('gsk_keyWithFailedGen', 'کلید تست failed_generation');
+
+      globalThis.fetch = jest.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        json: async () => ({
+          error: {
+            message: 'Tool choice is none, but model called a tool',
+            type: 'invalid_request_error',
+            code: 'tool_use_failed',
+            failed_generation:
+              '{"name": "assistant<|channel|>final", "arguments": متوجه شدم! جلسه کاری شما را برای ساعت ۹ شب برنامه‌ریزی می‌کنیم.\\n\\n```json\\n{\\n  "action": "create_task",\\n  "title": "جلسه کاری",\\n  "dueDateLabel": "امروز ۲۱:۰۰",\\n  "dueDate": "2026-10-17T21:00:00.000Z",\\n  "priority": "high",\\n  "priorityLabel": "بالا"\\n}\\n```\\n}',
+          },
+        }),
+      });
+
+      const client = new GroqClient();
+      const response = await client.generateResponse('نه شب جلسه دارم');
+
+      expect(response.success).toBe(true);
+      expect(response.provider).toBe('groq');
+      expect(response.reply).toContain('متوجه شدم! جلسه کاری شما را برای ساعت ۹ شب');
+      expect(response.proposedAction).toBeDefined();
+      expect(response.proposedAction?.title).toBe('جلسه کاری');
+      expect(response.proposedAction?.priorityLabel).toBe('بالا');
+    });
   });
 
   describe('Unified AiClient Dispatcher', () => {
-    it('dispatches requests to Groq 8B client directly', async () => {
+    it('dispatches requests to Groq GPT 20B client directly', async () => {
       await useAiSettingsStore.getState().addKey('gsk_test123', 'گرواک');
 
       globalThis.fetch = jest.fn().mockResolvedValueOnce({
@@ -189,7 +219,7 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
             {
               message: {
                 role: 'assistant',
-                content: 'پاسخ ارسالی از گرواک مدل ۸ میلیاردی',
+                content: 'پاسخ ارسالی از گرواک مدل ۲۰ میلیاردی',
               },
             },
           ],
@@ -199,7 +229,7 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
       const response = await aiClient.generateResponse('تست گرواک');
       expect(response.success).toBe(true);
       expect(response.provider).toBe('groq');
-      expect(response.reply).toBe('پاسخ ارسالی از گرواک مدل ۸ میلیاردی');
+      expect(response.reply).toBe('پاسخ ارسالی از گرواک مدل ۲۰ میلیاردی');
     });
   });
 
@@ -229,6 +259,34 @@ describe('Groq 8B AI Engine & Assistant Action Tests', () => {
       // Verify it appears in today filtered tasks
       const filteredToday = usePlannerStore.getState().getFilteredTasks();
       expect(filteredToday.some((t) => t.title === 'جلسه بازبینی طراحی اپلیکیشن')).toBe(true);
+    });
+
+    it('correctly handles meeting action types (create_meeting, schedule_meeting) and syncs selectedDate', () => {
+      const chat = useChatStore.getState();
+
+      // Simulate action with action type "create_meeting"
+      chat.confirmAction({
+        type: 'create_task',
+        action: 'create_meeting',
+        title: 'جلسه اضطراری با تیم فنی',
+        dueDateLabel: 'فردا ساعت ۱۰:۳۰',
+        priorityLabel: 'فوری',
+        isDestructive: false,
+      } as any);
+
+      const tasks = usePlannerStore.getState().tasks;
+      expect(tasks.length).toBe(1);
+      expect(tasks[0].title).toBe('جلسه اضطراری با تیم فنی');
+      expect(tasks[0].priority).toBe('urgent');
+
+      // Check that selectedDate in planner was synchronized to the meeting day
+      const selectedDate = usePlannerStore.getState().selectedDate;
+      const meetingDue = new Date(tasks[0].dueDate!);
+      expect(selectedDate.getDate()).toBe(meetingDue.getDate());
+
+      // Check tasks for selectedDate returns the newly created meeting immediately
+      const tasksOnDate = usePlannerStore.getState().getTasksForDate(selectedDate);
+      expect(tasksOnDate.some((t) => t.title === 'جلسه اضطراری با تیم فنی')).toBe(true);
     });
   });
 });

@@ -24,12 +24,12 @@ export const AssistantScreen: React.FC = () => {
   const { colors, radii, spacing, typography, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
-  const messages = useChatStore((s) => s.messages);
-  const isTyping = useChatStore((s) => s.isTyping);
-  const sendMessage = useChatStore((s) => s.sendMessage);
-  const confirmAction = useChatStore((s) => s.confirmAction);
-  const activeConfirmation = useChatStore((s) => s.activeConfirmation);
-  const dismissConfirmation = useChatStore((s) => s.dismissConfirmation);
+  const messages = useChatStore(s => s.messages);
+  const isTyping = useChatStore(s => s.isTyping);
+  const sendMessage = useChatStore(s => s.sendMessage);
+  const confirmAction = useChatStore(s => s.confirmAction);
+  const activeConfirmation = useChatStore(s => s.activeConfirmation);
+  const dismissConfirmation = useChatStore(s => s.dismissConfirmation);
 
   const flatListRef = useRef<FlatList>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -88,7 +88,6 @@ export const AssistantScreen: React.FC = () => {
     <AppScreen>
       <AppHeader
         title="دستیار هوشمند"
-        subtitle="موتور فوق‌سریع هوش مصنوعی Groq (Llama 8B)"
         rightAction={
           <View
             style={[
@@ -100,13 +99,8 @@ export const AssistantScreen: React.FC = () => {
             ]}
           >
             <Ionicons name="flash" size={13} color="#f97316" />
-            <Text
-              style={[
-                typography.caption,
-                { color: '#f97316', fontWeight: '700' },
-              ]}
-            >
-              Groq LPU (8B)
+            <Text style={[typography.caption, { color: '#f97316', fontWeight: '700' }]}>
+              GPT 20B
             </Text>
           </View>
         }
@@ -121,12 +115,9 @@ export const AssistantScreen: React.FC = () => {
         <FlatList
           ref={flatListRef}
           data={messages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
           style={styles.messageListContainer}
-          contentContainerStyle={[
-            styles.messageList,
-            { paddingVertical: spacing.md },
-          ]}
+          contentContainerStyle={[styles.messageList, { paddingVertical: spacing.md }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -162,15 +153,13 @@ export const AssistantScreen: React.FC = () => {
                   },
                 ]}
               >
-                می‌توانید کارهای امروز را بپرسید، برای فردا برنامه‌ریزی کنید یا با پیشنهادات سریع زیر گفتگو را شروع کنید.
+                می‌توانید کارهای امروز را بپرسید، برای فردا برنامه‌ریزی کنید یا با پیشنهادات سریع
+                زیر گفتگو را شروع کنید.
               </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <MessageBubble
-              message={item}
-              onConfirmAction={confirmAction}
-            />
+            <MessageBubble message={item} onConfirmAction={confirmAction} />
           )}
           ListFooterComponent={
             isTyping ? (
@@ -188,10 +177,7 @@ export const AssistantScreen: React.FC = () => {
                 >
                   <ActivityIndicator size="small" color={colors.accent} />
                   <Text
-                    style={[
-                      typography.caption,
-                      { color: colors.textSecondary, marginRight: 8 },
-                    ]}
+                    style={[typography.caption, { color: colors.textSecondary, marginRight: 8 }]}
                   >
                     دستیار در حال پاسخ است...
                   </Text>
@@ -205,7 +191,9 @@ export const AssistantScreen: React.FC = () => {
         <View
           style={{
             paddingBottom: isKeyboardVisible
-              ? (Platform.OS === 'ios' ? 6 : Math.max(insets.bottom, 6))
+              ? Platform.OS === 'ios'
+                ? 6
+                : Math.max(insets.bottom, 6)
               : tabClearance + 6,
           }}
         >

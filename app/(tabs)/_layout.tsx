@@ -1,10 +1,48 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View, Platform, Animated, Easing, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/shared/theme';
+import { usePlannerStore } from '../../src/features/planner/plannerStore';
+
+interface TabIconProps {
+  nameFocused: keyof typeof Ionicons.glyphMap;
+  nameUnfocused: keyof typeof Ionicons.glyphMap;
+  focused: boolean;
+  color: any;
+  activeColor: string;
+}
+
+const AnimatedTabIcon: React.FC<TabIconProps> = ({
+  nameFocused,
+  nameUnfocused,
+  focused,
+  color,
+  activeColor,
+}) => {
+  const [scale] = useState(() => new Animated.Value(focused ? 1.08 : 1));
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.08 : 1,
+      useNativeDriver: Platform.OS !== 'web',
+      friction: 6,
+      tension: 120,
+    }).start();
+  }, [focused, scale]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Ionicons
+        name={focused ? nameFocused : nameUnfocused}
+        size={24}
+        color={focused ? activeColor : color}
+      />
+    </Animated.View>
+  );
+};
 
 export default function TabLayout() {
   const { colors, fonts, isDark } = useTheme();
@@ -19,6 +57,30 @@ export default function TabLayout() {
       backBehavior="initialRoute"
       screenOptions={{
         headerShown: false,
+        lazy: false,
+        sceneStyleInterpolator: ({ current }) => {
+          const { width: screenWidth } = Dimensions.get('window');
+          return {
+            sceneStyle: {
+              transform: [
+                {
+                  translateX: current.progress.interpolate({
+                    inputRange: [-1, 0, 1],
+                    outputRange: [-screenWidth * 0.25, 0, screenWidth],
+                    extrapolate: 'clamp',
+                  }),
+                },
+              ],
+            },
+          };
+        },
+        transitionSpec: {
+          animation: 'timing',
+          config: {
+            duration: 240,
+            easing: Easing.out(Easing.cubic),
+          },
+        },
         tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: isDark
@@ -91,10 +153,12 @@ export default function TabLayout() {
         options={{
           title: 'یادداشت‌ها',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'document-text' : 'document-text-outline'}
-              size={24}
-              color={focused ? colors.accent : color}
+            <AnimatedTabIcon
+              nameFocused="document-text"
+              nameUnfocused="document-text-outline"
+              focused={focused}
+              color={color}
+              activeColor={colors.accent}
             />
           ),
         }}
@@ -104,10 +168,12 @@ export default function TabLayout() {
         options={{
           title: 'کارها',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'checkbox' : 'checkbox-outline'}
-              size={24}
-              color={focused ? colors.accent : color}
+            <AnimatedTabIcon
+              nameFocused="checkbox"
+              nameUnfocused="checkbox-outline"
+              focused={focused}
+              color={color}
+              activeColor={colors.accent}
             />
           ),
         }}
@@ -117,23 +183,32 @@ export default function TabLayout() {
         options={{
           title: 'دستیار',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'sparkles' : 'sparkles-outline'}
-              size={24}
-              color={focused ? colors.accent : color}
+            <AnimatedTabIcon
+              nameFocused="sparkles"
+              nameUnfocused="sparkles-outline"
+              focused={focused}
+              color={color}
+              activeColor={colors.accent}
             />
           ),
         }}
       />
       <Tabs.Screen
         name="index"
+        listeners={{
+          tabPress: () => {
+            usePlannerStore.getState().setSelectedDate(new Date());
+          },
+        }}
         options={{
           title: 'امروز',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'today' : 'today-outline'}
-              size={24}
-              color={focused ? colors.accent : color}
+            <AnimatedTabIcon
+              nameFocused="today"
+              nameUnfocused="today-outline"
+              focused={focused}
+              color={color}
+              activeColor={colors.accent}
             />
           ),
         }}

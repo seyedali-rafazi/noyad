@@ -5,7 +5,7 @@ export { AiResponse } from './aiUtils';
 
 export class AiClient {
   /**
-   * Sends user message to Groq high-speed LPU engine (Llama 3.1 8B Instant).
+   * Sends user message to Groq high-speed engine (GPT 20B).
    */
   async generateResponse(
     userMessage: string,

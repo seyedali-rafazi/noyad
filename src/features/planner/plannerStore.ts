@@ -12,10 +12,12 @@ const WEB_NOTES_KEY = 'ai_calender_notes';
 
 function savePlannerToWebStorage(tasks: readonly Task[], notes: readonly Note[]) {
   if (typeof window !== 'undefined' && window.localStorage) {
-    try {
-      window.localStorage.setItem(WEB_TASKS_KEY, JSON.stringify(tasks));
-      window.localStorage.setItem(WEB_NOTES_KEY, JSON.stringify(notes));
-    } catch {}
+    setTimeout(() => {
+      try {
+        window.localStorage.setItem(WEB_TASKS_KEY, JSON.stringify(tasks));
+        window.localStorage.setItem(WEB_NOTES_KEY, JSON.stringify(notes));
+      } catch {}
+    }, 0);
   }
 }
 

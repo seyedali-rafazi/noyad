@@ -12,7 +12,7 @@ import { TaskCard } from './components/TaskCard';
 import { TaskEditModal } from './components/TaskEditModal';
 import { Task } from '../../domain/models/task';
 import { defaultConfirmationPolicy, ConfirmationRequest } from '../../application/policies/confirmation';
-import { toPersianDigits } from '../../core/calendar';
+import { toPersianDigits, isSameJalaliDay } from '../../core/calendar';
 
 export const TasksScreen: React.FC = () => {
   const { colors, radii, spacing, typography, isDark } = useTheme();
@@ -22,17 +22,32 @@ export const TasksScreen: React.FC = () => {
 
   const taskFilter = usePlannerStore((s) => s.taskFilter);
   const setTaskFilter = usePlannerStore((s) => s.setTaskFilter);
+  const tasks = usePlannerStore((s) => s.tasks);
   const toggleTaskComplete = usePlannerStore((s) => s.toggleTaskComplete);
   const addTask = usePlannerStore((s) => s.addTask);
   const updateTask = usePlannerStore((s) => s.updateTask);
   const deleteTask = usePlannerStore((s) => s.deleteTask);
-  const getFilteredTasks = usePlannerStore((s) => s.getFilteredTasks);
-
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [confirmationRequest, setConfirmationRequest] = useState<ConfirmationRequest | null>(null);
 
-  const filteredTasks = getFilteredTasks();
+  const filteredTasks = tasks.filter((t) => {
+    const today = new Date();
+    switch (taskFilter) {
+      case 'today':
+        return !t.dueDate || isSameJalaliDay(new Date(t.dueDate), today);
+      case 'upcoming': {
+        if (!t.dueDate) return false;
+        const due = new Date(t.dueDate);
+        return due > today && !isSameJalaliDay(due, today);
+      }
+      case 'completed':
+        return t.status === 'completed';
+      case 'all':
+      default:
+        return true;
+    }
+  });
 
   const filters: { key: TaskFilter; label: string }[] = [
     { key: 'today', label: 'امروز' },

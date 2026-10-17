@@ -8,6 +8,8 @@ import { usePlannerStore } from '../planner/plannerStore';
 import { aiClient } from '../../core/ai/aiClient';
 import { TaskPriority } from '../../domain/types/common';
 
+import { resolveDueDateIso } from '../../core/ai/aiUtils';
+
 interface ChatState {
   messages: ChatMessageItem[];
   isTyping: boolean;
@@ -55,23 +57,24 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     // Apply real action to Planner Store & SQLite persistence
-    const actionType: string = action.type || (action as any).action;
-    if (actionType === 'create_task' || actionType === 'add_task' || actionType === 'new_task') {
-      let dueDateIso = action.dueDate;
-      if (!dueDateIso || isNaN(Date.parse(dueDateIso))) {
-        const d = new Date();
-        const label = action.dueDateLabel || '';
-        if (label.includes('پس‌فردا')) {
-          d.setDate(d.getDate() + 2);
-          d.setHours(10, 0, 0, 0);
-        } else if (label.includes('فردا')) {
-          d.setDate(d.getDate() + 1);
-          d.setHours(10, 0, 0, 0);
-        } else {
-          d.setHours(18, 0, 0, 0);
-        }
-        dueDateIso = d.toISOString();
-      }
+    const actionType: string = String(action.type || (action as any).action || '').toLowerCase();
+    const isTaskOrMeeting =
+      actionType === 'create_task' ||
+      actionType === 'add_task' ||
+      actionType === 'new_task' ||
+      actionType === 'create_event' ||
+      actionType === 'add_event' ||
+      actionType === 'new_event' ||
+      actionType === 'create_meeting' ||
+      actionType === 'add_meeting' ||
+      actionType === 'new_meeting' ||
+      actionType === 'set_meeting' ||
+      actionType === 'schedule_meeting' ||
+      actionType === 'meeting' ||
+      actionType === 'event';
+
+    if (isTaskOrMeeting) {
+      const dueDateIso = resolveDueDateIso(action.dueDate, action.dueDateLabel);
 
       const priority: TaskPriority =
         action.priority ||
@@ -88,6 +91,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
         dueDate: dueDateIso,
         priority,
       });
+
+      // Synchronize planner's selectedDate so the newly created meeting/task is selected immediately
+      if (dueDateIso) {
+        usePlannerStore.getState().setSelectedDate(new Date(dueDateIso));
+      }
     }
 
     // Standard constructive action confirmation

@@ -65,7 +65,108 @@ ${overdueSummary}
   "priorityLabel": "پایین" | "متوسط" | "بالا" | "فوری"
 }
 \`\`\`
+۴. توجه بسیار مهم: از هیچ‌گونه فراخوانی ابزار (Function/Tool call) یا تگ‌های سیستمی و کانال‌ها (مانند channel) استفاده نکنید. پاسخ شما باید کاملاً به صورت متن ساده و یکپارچه باشد و در صورت نیاز به ثبت کار، تنها از بلاک مارک‌داون json در انتهای پیام استفاده شود.
 اگر کاربر صرفاً مشورت خواست یا پرسش عمومی درباره کارهایش داشت، نیازی به بلاک JSON نیست و فقط پاسخ متنی به او بدهید.`;
+}
+
+/**
+ * Extracts and recovers generated text from Groq's failed_generation payload
+ * (which occurs when Groq misclassifies output formatting as tool calls e.g. "Tool choice is none, but model called a tool").
+ */
+export function extractFromFailedGeneration(failedGen: unknown): string | null {
+  if (!failedGen) return null;
+  const raw = typeof failedGen === 'string' ? failedGen : JSON.stringify(failedGen);
+  if (!raw.trim()) return null;
+
+  // 1. Try parsing directly if valid JSON
+  try {
+    const parsed = typeof failedGen === 'object' && failedGen !== null ? failedGen : JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      const args = (parsed as Record<string, unknown>).arguments ??
+        (parsed as Record<string, unknown>).args ??
+        (parsed as Record<string, unknown>).parameters;
+
+      if (typeof args === 'string' && args.trim().length > 0) {
+        let content = args.trim();
+        if (content.includes('\\n')) {
+          content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        }
+        return content;
+      }
+      if (typeof args === 'object' && args !== null) {
+        return '```json\n' + JSON.stringify(args, null, 2) + '\n```';
+      }
+    }
+  } catch {
+    // Continue to regex
+  }
+
+  // 2. Regex match for "arguments": ...
+  const argMatch = raw.match(/"arguments"\s*:\s*([\s\S]*)$/);
+  if (argMatch) {
+    let content = argMatch[1].trim();
+
+    // Check if quoted string
+    if (
+      (content.startsWith('"') && content.endsWith('"')) ||
+      (content.startsWith("'") && content.endsWith("'"))
+    ) {
+      try {
+        content = JSON.parse(content);
+      } catch {
+        content = content.slice(1, -1);
+      }
+    } else if (content.endsWith('}')) {
+      content = content.replace(/\s*\}\s*$/, '');
+    }
+
+    if (content.includes('\\n')) {
+      content = content.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+    }
+
+    return content.trim();
+  }
+
+  // 3. Fallback: check for channel tag
+  const channelMatch = raw.match(/<\|channel\|>[^\n]*\n([\s\S]*)/);
+  if (channelMatch) {
+    return channelMatch[1].trim();
+  }
+
+  return raw.trim();
+}
+
+export function resolveDueDateIso(rawDate?: unknown, label?: unknown): string {
+  if (typeof rawDate === 'string' && rawDate.trim() && !isNaN(Date.parse(rawDate))) {
+    return new Date(rawDate).toISOString();
+  }
+
+  const d = new Date();
+  const labelStr = String(label || '').toLowerCase();
+
+  if (labelStr.includes('پس‌فردا') || labelStr.includes('پس فردا')) {
+    d.setDate(d.getDate() + 2);
+  } else if (labelStr.includes('فردا')) {
+    d.setDate(d.getDate() + 1);
+  }
+
+  // Convert Persian/Arabic digits to English digits
+  const normalized = labelStr.replace(/[۰-۹]/g, (w) =>
+    String.fromCharCode(w.charCodeAt(0) - 1728)
+  );
+
+  const timeMatch = normalized.match(/(\d{1,2}):(\d{2})/) || normalized.match(/ساعت\s*(\d{1,2})/);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    if (hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59) {
+      d.setHours(hours, minutes, 0, 0);
+      return d.toISOString();
+    }
+  }
+
+  d.setHours(18, 0, 0, 0);
+  return d.toISOString();
 }
 
 /**
@@ -89,26 +190,24 @@ export function extractActionFromText(text: string): {
     const parsed = JSON.parse(rawJson);
     let proposedAction: ProposedActionPreview | undefined = undefined;
 
-    const actionType = parsed.action || parsed.type;
-    if (
-      (actionType === 'create_task' || actionType === 'add_task' || actionType === 'new_task') &&
-      parsed.title
-    ) {
-      let dueDateIso = parsed.dueDate;
-      if (!dueDateIso || isNaN(Date.parse(dueDateIso))) {
-        const d = new Date();
-        const label = parsed.dueDateLabel || '';
-        if (label.includes('پس‌فردا')) {
-          d.setDate(d.getDate() + 2);
-          d.setHours(10, 0, 0, 0);
-        } else if (label.includes('فردا')) {
-          d.setDate(d.getDate() + 1);
-          d.setHours(10, 0, 0, 0);
-        } else {
-          d.setHours(18, 0, 0, 0);
-        }
-        dueDateIso = d.toISOString();
-      }
+    const actionType = String(parsed.action || parsed.type || '').toLowerCase();
+    const isTaskOrMeeting =
+      actionType === 'create_task' ||
+      actionType === 'add_task' ||
+      actionType === 'new_task' ||
+      actionType === 'create_event' ||
+      actionType === 'add_event' ||
+      actionType === 'new_event' ||
+      actionType === 'create_meeting' ||
+      actionType === 'add_meeting' ||
+      actionType === 'new_meeting' ||
+      actionType === 'set_meeting' ||
+      actionType === 'schedule_meeting' ||
+      actionType === 'meeting' ||
+      actionType === 'event';
+
+    if (isTaskOrMeeting && parsed.title) {
+      const dueDateIso = resolveDueDateIso(parsed.dueDate, parsed.dueDateLabel);
 
       const priorityMap: Record<string, TaskPriority> = {
         urgent: 'urgent',

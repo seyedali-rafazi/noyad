@@ -153,7 +153,20 @@ export function formatPersianTime(dateInput: Date | string): string {
  * Returns a time-of-day greeting in Persian.
  */
 export function getPersianGreeting(referenceDate?: Date): string {
-  const date = referenceDate ?? new Date();
+  let date = referenceDate ?? new Date();
+
+  // If a midnight date (00:00:00) is provided and represents today,
+  // use the actual current time so the greeting reflects the real hour of the day.
+  if (
+    referenceDate &&
+    referenceDate.getHours() === 0 &&
+    referenceDate.getMinutes() === 0 &&
+    referenceDate.getSeconds() === 0 &&
+    isJalaliToday(referenceDate)
+  ) {
+    date = new Date();
+  }
+
   const hour = date.getHours();
 
   if (hour >= 5 && hour < 12) {
@@ -288,8 +301,8 @@ export function getJalaliMonthGrid(
  */
 export function getHorizontalDaysStrip(
   baseDate: Date = new Date(),
-  pastDaysCount = 7,
-  futureDaysCount = 14,
+  pastDaysCount = 15,
+  futureDaysCount = 15,
   selectedDate?: Date
 ): JalaliCalendarDay[] {
   const result: JalaliCalendarDay[] = [];

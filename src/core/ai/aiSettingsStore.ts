@@ -4,8 +4,8 @@ import { eq, asc } from 'drizzle-orm';
 import { getDatabase, isDatabaseSupported } from '../database/client';
 import { aiApiKeys } from '../database/schema/aiKeys';
 
-export const GROQ_MODEL_ID = 'llama-3.1-8b-instant';
-export const GROQ_MODEL_NAME = 'Llama 3.1 8B Instant (مدل ۸ میلیاردی)';
+export const GROQ_MODEL_ID = 'openai/gpt-oss-20b';
+export const GROQ_MODEL_NAME = 'GPT 20B';
 
 export interface StoredApiKey {
   id: string;

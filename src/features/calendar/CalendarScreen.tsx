@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Platform, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../shared/theme';
 import { AppScreen } from '../../shared/components/AppScreen';
@@ -9,6 +8,7 @@ import { AppHeader } from '../../shared/components/AppHeader';
 import { Card } from '../../shared/components/Card';
 import { EmptyState } from '../../shared/components/EmptyState';
 import { ConfirmationModal } from '../../shared/components/ConfirmationModal';
+import { useScreenModalAnimation } from '../../shared/hooks';
 import { usePlannerStore } from '../planner/plannerStore';
 import { CalendarGrid } from './components/CalendarGrid';
 import { TaskCard } from '../tasks/components/TaskCard';
@@ -24,7 +24,7 @@ import {
 } from '../../core/calendar';
 
 export const CalendarScreen: React.FC = () => {
-  const router = useRouter();
+  const { handleClose, animatedStyle } = useScreenModalAnimation();
   const { colors, radii, spacing, typography, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomOffset = Math.max(insets.bottom, 12) + (Platform.OS === 'android' ? 10 : 6);
@@ -61,18 +61,6 @@ export const CalendarScreen: React.FC = () => {
     setSelectedDate(today);
   };
 
-  const handleClose = () => {
-    try {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)');
-      }
-    } catch {
-      router.replace('/(tabs)');
-    }
-  };
-
   const handleOpenAdd = () => {
     setEditingTask(null);
     setIsEditModalVisible(true);
@@ -102,30 +90,36 @@ export const CalendarScreen: React.FC = () => {
   };
 
   return (
-    <AppScreen>
-      <AppHeader
-        title="تقویم شمسی"
-        subtitle="برنامه زمانی و رویدادهای ماهانه"
-        showBack={true}
-        onBackPress={handleClose}
-        rightAction={
-          <Pressable
-            onPress={handleTodayPress}
-            style={[
-              styles.todayButton,
-              {
-                backgroundColor: colors.surfaceRaised,
-                borderColor: isDark ? colors.border : colors.borderLight,
-                borderRadius: radii.full,
-              },
-            ]}
-          >
-            <Text style={[typography.caption, { color: colors.accent, fontWeight: '700' }]}>
-              امروز
-            </Text>
-          </Pressable>
-        }
-      />
+    <AppScreen style={{ backgroundColor: 'transparent' }}>
+      <Animated.View style={[animatedStyle, { backgroundColor: colors.background, flex: 1 }]}>
+        <AppHeader
+          title="تقویم شمسی"
+          subtitle="برنامه زمانی و رویدادهای ماهانه"
+          showBack={true}
+          onBackPress={handleClose}
+          rightAction={
+            <Pressable
+              onPress={handleTodayPress}
+              style={[
+                styles.todayButton,
+                {
+                  backgroundColor: colors.surfaceRaised,
+                  borderColor: isDark ? colors.border : colors.borderLight,
+                  borderRadius: radii.full,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  typography.caption,
+                  { color: colors.accent, fontWeight: '700' },
+                ]}
+              >
+                امروز
+              </Text>
+            </Pressable>
+          }
+        />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -257,6 +251,7 @@ export const CalendarScreen: React.FC = () => {
         onConfirm={handleConfirmDelete}
         onCancel={() => setConfirmationRequest(null)}
       />
+      </Animated.View>
     </AppScreen>
   );
 };

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme';
@@ -25,12 +25,27 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 }) => {
   const { colors, radii, spacing, typography, isDark } = useTheme();
 
-  const isCompleted = task.status === 'completed';
+  // Optimistic state with render-time sync (avoids useEffect cascading renders)
+  const [prevStatus, setPrevStatus] = useState(task.status);
+  const [optimisticStatus, setOptimisticStatus] = useState(task.status);
+
+  if (task.status !== prevStatus) {
+    setPrevStatus(task.status);
+    setOptimisticStatus(task.status);
+  }
+
+  const isCompleted = optimisticStatus === 'completed';
   const overdue = task.dueDate && !isCompleted ? checkIsOverdue(task.dueDate) : false;
 
   const dueLabel = task.dueDate
     ? `${getRelativeJalaliLabel(task.dueDate)} ${formatPersianTime(task.dueDate)}`
     : null;
+
+  const handleToggle = () => {
+    const nextStatus = isCompleted ? 'pending' : 'completed';
+    setOptimisticStatus(nextStatus);
+    onToggleComplete();
+  };
 
   return (
     <Pressable
@@ -54,14 +69,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <View style={styles.contentRow}>
         {/* Toggle checkbox (RTL: right side) */}
         <Pressable
-          onPress={onToggleComplete}
-          hitSlop={8}
-          style={[
+          onPress={handleToggle}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          style={({ pressed }) => [
             styles.checkbox,
             {
               borderColor: isCompleted ? colors.success : colors.border,
               backgroundColor: isCompleted ? colors.success : 'transparent',
               borderRadius: radii.sm,
+              transform: [{ scale: pressed ? 0.88 : 1 }],
             },
           ]}
         >

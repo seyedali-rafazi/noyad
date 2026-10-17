@@ -1,10 +1,15 @@
 import { useAiSettingsStore, GROQ_MODEL_ID } from './aiSettingsStore';
-import { getAiSystemPrompt, extractActionFromText, AiResponse } from './aiUtils';
+import {
+  getAiSystemPrompt,
+  extractActionFromText,
+  extractFromFailedGeneration,
+  AiResponse,
+} from './aiUtils';
 
 export class GroqClient {
   /**
    * Sends user message to GroqCloud API using configured API keys with automatic failover.
-   * Model: Llama 3.1 8B Instant (8-billion parameter high-speed model).
+   * Model: GPT 20B (OpenAI GPT-OSS 20B parameter model).
    */
   async generateResponse(
     userMessage: string,
@@ -20,7 +25,7 @@ export class GroqClient {
         provider: 'groq',
         reply:
           'کلید API گرواک (Groq) ثبت نشده است.\n\n' +
-          'برای گفتگوی زنده با مدل فوق‌سریع ۸ میلیاردی، لطفاً از بخش «تنظیمات» یک یا چند کلید رایگان از console.groq.com دریافت و ثبت فرمایید.',
+          'برای گفت‌وگو با دستیار هوشمند، لطفاً از بخش «تنظیمات» یک یا چند کلید رایگان از console.groq.com دریافت و ثبت فرمایید.',
       };
     }
 
@@ -94,6 +99,26 @@ export class GroqClient {
         lastErrorDetails = `(HTTP ${response.status}): ${errMsg}`;
         console.warn(`Groq API responded with error [${response.status}]:`, errMsg);
 
+        // 1.1 Recover generated output if Groq returned failed_generation
+        // (common when models emit special tokens or Groq reports "Tool choice is none, but model called a tool")
+        const failedGen = errJson?.error?.failed_generation;
+        if (failedGen) {
+          const rescuedText = extractFromFailedGeneration(failedGen);
+          if (rescuedText) {
+            const { cleanReply, proposedAction } = extractActionFromText(rescuedText);
+            if (cleanReply || proposedAction) {
+              return {
+                success: true,
+                reply: cleanReply,
+                proposedAction,
+                usedKeyId: currentKey.id,
+                failoverOccurred,
+                provider: 'groq',
+              };
+            }
+          }
+        }
+
         // 2. Model not found or deprecated (404) -> auto-fallback to GROQ_MODEL_ID
         if (response.status === 404 && model !== GROQ_MODEL_ID) {
           console.warn(`Groq model [${model}] returned 404. Falling back to ${GROQ_MODEL_ID}...`);
@@ -128,6 +153,23 @@ export class GroqClient {
             };
           } else {
             const fallbackErr = await response.json().catch(() => null);
+            const fallbackFailedGen = fallbackErr?.error?.failed_generation;
+            if (fallbackFailedGen) {
+              const rescuedText = extractFromFailedGeneration(fallbackFailedGen);
+              if (rescuedText) {
+                const { cleanReply, proposedAction } = extractActionFromText(rescuedText);
+                if (cleanReply || proposedAction) {
+                  return {
+                    success: true,
+                    reply: cleanReply,
+                    proposedAction,
+                    usedKeyId: currentKey.id,
+                    failoverOccurred,
+                    provider: 'groq',
+                  };
+                }
+              }
+            }
             lastErrorDetails = `(HTTP ${response.status}): ${fallbackErr?.error?.message || response.statusText}`;
           }
         }

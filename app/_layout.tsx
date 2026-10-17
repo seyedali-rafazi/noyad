@@ -79,14 +79,16 @@ export default function RootLayout() {
         <Stack.Screen
           name="settings"
           options={{
-            presentation: 'modal',
+            presentation: 'transparentModal',
+            animation: 'none',
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="calendar"
           options={{
-            presentation: 'modal',
+            presentation: 'transparentModal',
+            animation: 'none',
             headerShown: false,
           }}
         />

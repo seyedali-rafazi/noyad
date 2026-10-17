@@ -25,11 +25,11 @@ export const PlannerScreen: React.FC = () => {
 
   const selectedDate = usePlannerStore((s) => s.selectedDate);
   const setSelectedDate = usePlannerStore((s) => s.setSelectedDate);
+  const tasks = usePlannerStore((s) => s.tasks);
   const toggleTaskComplete = usePlannerStore((s) => s.toggleTaskComplete);
   const addTask = usePlannerStore((s) => s.addTask);
   const updateTask = usePlannerStore((s) => s.updateTask);
   const deleteTask = usePlannerStore((s) => s.deleteTask);
-  const getTasksForDate = usePlannerStore((s) => s.getTasksForDate);
   const getOverdueTasks = usePlannerStore((s) => s.getOverdueTasks);
 
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -37,7 +37,10 @@ export const PlannerScreen: React.FC = () => {
   const [confirmationRequest, setConfirmationRequest] = useState<ConfirmationRequest | null>(null);
 
   const isToday = isSameJalaliDay(selectedDate, new Date());
-  const dayTasks = getTasksForDate(selectedDate);
+  const dayTasks = tasks.filter((t) => {
+    if (!t.dueDate) return isToday;
+    return isSameJalaliDay(new Date(t.dueDate), selectedDate);
+  });
   const overdueTasks = isToday ? getOverdueTasks() : [];
 
   const completedCount = dayTasks.filter((t) => t.status === 'completed').length;
