@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Animated } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Animated, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemePreference } from '../../shared/theme';
 import { AppScreen } from '../../shared/components/AppScreen';
@@ -91,473 +91,479 @@ export const SettingsScreen: React.FC = () => {
       <Animated.View style={[animatedStyle, { backgroundColor: colors.background, flex: 1 }]}>
         <AppHeader title="تنظیمات" showBack onBackPress={handleBack} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: spacing.base, paddingBottom: 60 }}
-      >
-        {/* Appearance Section */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: colors.textSecondary,
-              textAlign: 'right',
-              marginTop: spacing.base,
-              marginBottom: 8,
-              fontWeight: '700',
-            },
-          ]}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: spacing.base, paddingBottom: 60 }}
         >
-          ظاهر و پوسته
-        </Text>
-        <Card variant="flat" style={{ padding: spacing.md }}>
-          <View style={styles.themeOptionsRow}>
-            {themeOptions.map(opt => {
-              const isSelected = themePreference === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => setThemePreference(opt.key)}
-                  style={[
-                    styles.themeItem,
-                    {
-                      backgroundColor: isSelected ? colors.accent : colors.surfaceRaised,
-                      borderRadius: radii.md,
-                      paddingVertical: spacing.md - 2,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={opt.icon}
-                    size={20}
-                    color={isSelected ? '#FFFFFF' : colors.textPrimary}
-                  />
-                  <Text
-                    style={[
-                      typography.bodySmall,
-                      {
-                        color: isSelected ? '#FFFFFF' : colors.textPrimary,
-                        fontWeight: isSelected ? '700' : '500',
-                        marginTop: 4,
-                      },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Card>
-
-        {/* Groq AI Section */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: colors.textSecondary,
-              textAlign: 'right',
-              marginTop: spacing.lg,
-              marginBottom: 8,
-              fontWeight: '700',
-            },
-          ]}
-        >
-          هوش مصنوعی (Groq)
-        </Text>
-        <Card variant="flat" style={{ padding: spacing.base }}>
+          {/* Appearance Section */}
           <Text
             style={[
-              typography.bodySmall,
+              typography.caption,
               {
                 color: colors.textSecondary,
                 textAlign: 'right',
-                marginBottom: spacing.md,
-                lineHeight: 20,
+                marginTop: spacing.base,
+                marginBottom: 8,
+                fontWeight: '700',
               },
             ]}
           >
-            برای فعال‌سازی دستیار هوشمند، کلید API خود را وارد کنید (دریافت کلید رایگان از
-            console.groq.com).
+            ظاهر و پوسته
           </Text>
+          <Card variant="flat" style={{ padding: spacing.md }}>
+            <View style={styles.themeOptionsRow}>
+              {themeOptions.map(opt => {
+                const isSelected = themePreference === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setThemePreference(opt.key)}
+                    style={[
+                      styles.themeItem,
+                      {
+                        backgroundColor: isSelected ? colors.accent : colors.surfaceRaised,
+                        borderRadius: radii.md,
+                        paddingVertical: spacing.md - 2,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={20}
+                      color={isSelected ? '#FFFFFF' : colors.textPrimary}
+                    />
+                    <Text
+                      style={[
+                        typography.bodySmall,
+                        {
+                          color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                          fontWeight: isSelected ? '700' : '500',
+                          marginTop: 4,
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Card>
 
-          {/* Input for new key */}
-          <View style={styles.keyInputWrap}>
-            <TextInputField
-              label="کلید API جدید گرواک (Groq):"
-              placeholder="مثال: gsk_..."
-              value={newKeyInput}
-              onChangeText={text => {
-                setNewKeyInput(text);
-                if (keyInputError) setKeyInputError(null);
-              }}
-              secureTextEntry={isSecure}
-              error={keyInputError ?? undefined}
-            />
-            <Pressable onPress={() => setIsSecure(!isSecure)} style={styles.eyeToggle} hitSlop={8}>
-              <Ionicons
-                name={isSecure ? 'eye-outline' : 'eye-off-outline'}
-                size={18}
-                color={colors.textMuted}
-              />
-            </Pressable>
-          </View>
-
-          <TextInputField
-            label="برچسب اختیاری برای شناسایی:"
-            placeholder="مثلاً: کلید اصلی"
-            value={newKeyLabel}
-            onChangeText={setNewKeyLabel}
-            containerStyle={{ marginTop: spacing.xs }}
-          />
-
-          <View style={{ marginTop: spacing.md }}>
-            <Button
-              title="افزودن کلید"
-              onPress={handleAddKey}
-              variant="primary"
-              size="md"
-              style={{ backgroundColor: colors.accent }}
-              icon={<Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />}
-            />
-          </View>
-
-          {actionFeedback && (
-            <View
+          {/* Groq AI Section */}
+          <Text
+            style={[
+              typography.caption,
+              {
+                color: colors.textSecondary,
+                textAlign: 'right',
+                marginTop: spacing.lg,
+                marginBottom: 8,
+                fontWeight: '700',
+              },
+            ]}
+          >
+            هوش مصنوعی (Groq)
+          </Text>
+          <Card variant="flat" style={{ padding: spacing.base }}>
+            <Text
               style={[
-                styles.feedbackPill,
-                { backgroundColor: colors.successSubtle, borderRadius: radii.sm },
+                typography.bodySmall,
+                {
+                  color: colors.textSecondary,
+                  textAlign: 'right',
+                  marginBottom: spacing.md,
+                  lineHeight: 20,
+                },
               ]}
             >
-              <Text style={[typography.caption, { color: colors.success, fontWeight: '600' }]}>
-                {actionFeedback}
+              برای فعال‌سازی دستیار هوشمند، کلید API خود را وارد کنید (دریافت کلید رایگان از
+              console.groq.com).
+            </Text>
+
+            {/* Input for new key */}
+            <View style={styles.keyInputWrap}>
+              <TextInputField
+                label="کلید API جدید گرواک (Groq):"
+                placeholder="مثال: gsk_..."
+                value={newKeyInput}
+                onChangeText={text => {
+                  setNewKeyInput(text);
+                  if (keyInputError) setKeyInputError(null);
+                }}
+                secureTextEntry={isSecure}
+                error={keyInputError ?? undefined}
+              />
+              <Pressable
+                onPress={() => setIsSecure(!isSecure)}
+                style={styles.eyeToggle}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={isSecure ? 'eye-outline' : 'eye-off-outline'}
+                  size={18}
+                  color={colors.textMuted}
+                />
+              </Pressable>
+            </View>
+
+            <TextInputField
+              label="برچسب اختیاری برای شناسایی:"
+              placeholder="مثلاً: کلید اصلی"
+              value={newKeyLabel}
+              onChangeText={setNewKeyLabel}
+              containerStyle={{ marginTop: spacing.xs }}
+            />
+
+            <View style={{ marginTop: spacing.md }}>
+              <Button
+                title="افزودن کلید"
+                onPress={handleAddKey}
+                variant="primary"
+                size="md"
+                style={{ backgroundColor: colors.accent }}
+                icon={<Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />}
+              />
+            </View>
+
+            {actionFeedback && (
+              <View
+                style={[
+                  styles.feedbackPill,
+                  { backgroundColor: colors.successSubtle, borderRadius: radii.sm },
+                ]}
+              >
+                <Text style={[typography.caption, { color: colors.success, fontWeight: '600' }]}>
+                  {actionFeedback}
+                </Text>
+              </View>
+            )}
+
+            {/* List of saved keys */}
+            <View style={styles.savedKeysHeader}>
+              <Text
+                style={[
+                  typography.bodySmall,
+                  {
+                    color: colors.textPrimary,
+                    fontWeight: '700',
+                  },
+                ]}
+              >
+                کلیدهای ثبت‌شده Groq ({keys.length}):
               </Text>
             </View>
-          )}
 
-          {/* List of saved keys */}
-          <View style={styles.savedKeysHeader}>
+            {keys.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyKeysBox,
+                  {
+                    backgroundColor: colors.surfaceRaised,
+                    borderRadius: radii.md,
+                    borderColor: isDark ? colors.border : colors.borderLight,
+                  },
+                ]}
+              >
+                <Ionicons name="key-outline" size={24} color={colors.textMuted} />
+                <Text
+                  style={[
+                    typography.caption,
+                    { color: colors.textMuted, textAlign: 'center', marginTop: 6 },
+                  ]}
+                >
+                  هنوز کلیدی اضافه نشده است. کلید رایگان خود را از console.groq.com دریافت کنید.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: 8, marginTop: 4 }}>
+                {keys.map((k, idx) => {
+                  const isActive = k.status === 'active';
+                  const isExhausted = k.status === 'exhausted';
+
+                  return (
+                    <View
+                      key={k.id}
+                      style={[
+                        styles.keyCardRow,
+                        {
+                          backgroundColor: colors.surfaceRaised,
+                          borderRadius: radii.md,
+                          borderColor: isDark ? colors.border : colors.borderLight,
+                        },
+                      ]}
+                    >
+                      {/* Left: Actions & Status */}
+                      <View style={styles.keyCardActions}>
+                        <Pressable
+                          onPress={() => removeKey(k.id)}
+                          hitSlop={8}
+                          style={styles.deleteKeyBtn}
+                        >
+                          <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                        </Pressable>
+
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            {
+                              backgroundColor: isActive
+                                ? colors.successSubtle
+                                : isExhausted
+                                  ? colors.warningSubtle
+                                  : colors.dangerSubtle,
+                              borderRadius: radii.full,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              typography.caption,
+                              {
+                                color: isActive
+                                  ? colors.success
+                                  : isExhausted
+                                    ? colors.warning
+                                    : colors.danger,
+                                fontWeight: '700',
+                                fontSize: 10,
+                              },
+                            ]}
+                          >
+                            {isActive ? 'فعال' : isExhausted ? 'سهمیه پایان‌یافته' : 'نامعتبر'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      {/* Right: Key Info (RTL) */}
+                      <View style={styles.keyCardTextCol}>
+                        <Text
+                          style={[
+                            typography.bodySmall,
+                            { color: colors.textPrimary, fontWeight: '700', textAlign: 'right' },
+                          ]}
+                        >
+                          {k.label ? k.label : `کلید گرواک شماره ${idx + 1}`}
+                        </Text>
+
+                        <Text
+                          style={[
+                            typography.caption,
+                            { color: colors.textSecondary, textAlign: 'right', marginTop: 2 },
+                          ]}
+                        >
+                          {maskKey(k.apiKey)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {hasExhaustedKey && (
+              <View style={{ marginTop: spacing.md }}>
+                <Button
+                  title="بازنشانی وضعیت همه کلیدها به فعال"
+                  onPress={resetKeyStatuses}
+                  variant="outline"
+                  size="sm"
+                  icon={<Ionicons name="refresh-outline" size={16} color={colors.accent} />}
+                />
+              </View>
+            )}
+          </Card>
+
+          {/* Calendar & Timezone Section */}
+          <Text
+            style={[
+              typography.caption,
+              {
+                color: colors.textSecondary,
+                textAlign: 'right',
+                marginTop: spacing.lg,
+                marginBottom: 8,
+                fontWeight: '700',
+              },
+            ]}
+          >
+            تقویم و تاریخ
+          </Text>
+          <Card variant="flat" style={{ padding: spacing.md }}>
             <Text
               style={[
                 typography.bodySmall,
                 {
                   color: colors.textPrimary,
-                  fontWeight: '700',
+                  textAlign: 'right',
+                  marginBottom: 8,
+                  fontWeight: '600',
                 },
               ]}
             >
-              کلیدهای ثبت‌شده Groq ({keys.length}):
+              آغاز هفته در تقویم:
             </Text>
-          </View>
-
-          {keys.length === 0 ? (
-            <View
-              style={[
-                styles.emptyKeysBox,
-                {
-                  backgroundColor: colors.surfaceRaised,
-                  borderRadius: radii.md,
-                  borderColor: isDark ? colors.border : colors.borderLight,
-                },
-              ]}
-            >
-              <Ionicons name="key-outline" size={24} color={colors.textMuted} />
-              <Text
-                style={[
-                  typography.caption,
-                  { color: colors.textMuted, textAlign: 'center', marginTop: 6 },
-                ]}
-              >
-                هنوز کلیدی اضافه نشده است. کلید رایگان خود را از console.groq.com دریافت کنید.
-              </Text>
-            </View>
-          ) : (
-            <View style={{ gap: 8, marginTop: 4 }}>
-              {keys.map((k, idx) => {
-                const isActive = k.status === 'active';
-                const isExhausted = k.status === 'exhausted';
-
+            <View style={styles.optionsList}>
+              {weekStartOptions.map(opt => {
+                const isSelected = weekStart === opt.key;
                 return (
-                  <View
-                    key={k.id}
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setWeekStart(opt.key as typeof weekStart)}
                     style={[
-                      styles.keyCardRow,
+                      styles.radioRow,
                       {
-                        backgroundColor: colors.surfaceRaised,
-                        borderRadius: radii.md,
-                        borderColor: isDark ? colors.border : colors.borderLight,
+                        backgroundColor: isSelected ? colors.surfaceRaised : 'transparent',
+                        borderRadius: radii.sm,
+                        padding: spacing.sm,
                       },
                     ]}
                   >
-                    {/* Left: Actions & Status */}
-                    <View style={styles.keyCardActions}>
-                      <Pressable
-                        onPress={() => removeKey(k.id)}
-                        hitSlop={8}
-                        style={styles.deleteKeyBtn}
-                      >
-                        <Ionicons name="trash-outline" size={18} color={colors.danger} />
-                      </Pressable>
-
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: isActive
-                              ? colors.successSubtle
-                              : isExhausted
-                                ? colors.warningSubtle
-                                : colors.dangerSubtle,
-                            borderRadius: radii.full,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            typography.caption,
-                            {
-                              color: isActive
-                                ? colors.success
-                                : isExhausted
-                                  ? colors.warning
-                                  : colors.danger,
-                              fontWeight: '700',
-                              fontSize: 10,
-                            },
-                          ]}
-                        >
-                          {isActive ? 'فعال' : isExhausted ? 'سهمیه پایان‌یافته' : 'نامعتبر'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {/* Right: Key Info (RTL) */}
-                    <View style={styles.keyCardTextCol}>
-                      <Text
-                        style={[
-                          typography.bodySmall,
-                          { color: colors.textPrimary, fontWeight: '700', textAlign: 'right' },
-                        ]}
-                      >
-                        {k.label ? k.label : `کلید گرواک شماره ${idx + 1}`}
-                      </Text>
-
-                      <Text
-                        style={[
-                          typography.caption,
-                          { color: colors.textSecondary, textAlign: 'right', marginTop: 2 },
-                        ]}
-                      >
-                        {maskKey(k.apiKey)}
-                      </Text>
-                    </View>
-                  </View>
+                    <Ionicons
+                      name={isSelected ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={isSelected ? colors.accent : colors.textMuted}
+                    />
+                    <Text
+                      style={[
+                        typography.bodyMedium,
+                        {
+                          color: colors.textPrimary,
+                          marginRight: 8,
+                          fontWeight: isSelected ? '600' : '400',
+                        },
+                      ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </Pressable>
                 );
               })}
             </View>
-          )}
 
-          {hasExhaustedKey && (
-            <View style={{ marginTop: spacing.md }}>
-              <Button
-                title="بازنشانی وضعیت همه کلیدها به فعال"
-                onPress={resetKeyStatuses}
-                variant="outline"
-                size="sm"
-                icon={<Ionicons name="refresh-outline" size={16} color={colors.accent} />}
-              />
+            <View
+              style={[
+                styles.infoDivider,
+                { borderTopColor: isDark ? colors.border : colors.borderLight },
+              ]}
+            >
+              <View style={styles.infoRow}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  {DEFAULT_TIMEZONE}
+                </Text>
+                <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
+                  منطقه زمانی پیش‌فرض:
+                </Text>
+              </View>
             </View>
-          )}
-        </Card>
+          </Card>
 
-        {/* Calendar & Timezone Section */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: colors.textSecondary,
-              textAlign: 'right',
-              marginTop: spacing.lg,
-              marginBottom: 8,
-              fontWeight: '700',
-            },
-          ]}
-        >
-          تقویم و تاریخ
-        </Text>
-        <Card variant="flat" style={{ padding: spacing.md }}>
+          {/* Notifications Preference */}
           <Text
             style={[
-              typography.bodySmall,
-              { color: colors.textPrimary, textAlign: 'right', marginBottom: 8, fontWeight: '600' },
-            ]}
-          >
-            آغاز هفته در تقویم:
-          </Text>
-          <View style={styles.optionsList}>
-            {weekStartOptions.map(opt => {
-              const isSelected = weekStart === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => setWeekStart(opt.key as typeof weekStart)}
-                  style={[
-                    styles.radioRow,
-                    {
-                      backgroundColor: isSelected ? colors.surfaceRaised : 'transparent',
-                      borderRadius: radii.sm,
-                      padding: spacing.sm,
-                    },
-                  ]}
-                >
-                  <Ionicons
-                    name={isSelected ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={isSelected ? colors.accent : colors.textMuted}
-                  />
-                  <Text
-                    style={[
-                      typography.bodyMedium,
-                      {
-                        color: colors.textPrimary,
-                        marginRight: 8,
-                        fontWeight: isSelected ? '600' : '400',
-                      },
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View
-            style={[
-              styles.infoDivider,
-              { borderTopColor: isDark ? colors.border : colors.borderLight },
-            ]}
-          >
-            <View style={styles.infoRow}>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>
-                {DEFAULT_TIMEZONE}
-              </Text>
-              <Text style={[typography.bodySmall, { color: colors.textSecondary }]}>
-                منطقه زمانی پیش‌فرض:
-              </Text>
-            </View>
-          </View>
-        </Card>
-
-        {/* Notifications Preference */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: colors.textSecondary,
-              textAlign: 'right',
-              marginTop: spacing.lg,
-              marginBottom: 8,
-              fontWeight: '700',
-            },
-          ]}
-        >
-          اعلان‌ها و یادآوری‌ها
-        </Text>
-        <Card variant="flat" style={{ padding: spacing.md }}>
-          <View style={styles.switchRow}>
-            <ToggleSwitch value={dailyBriefing} onValueChange={setDailyBriefing} />
-            <View style={styles.switchTextCol}>
-              <Text
-                style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
-              >
-                خلاصه برنامه صبحگاهی
-              </Text>
-              <Text
-                style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
-              >
-                ارسال اعلان مرور کارهای روزانه در ساعت ۸:۰۰ صبح
-              </Text>
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.switchRow,
+              typography.caption,
               {
-                marginTop: spacing.md,
-                paddingTop: spacing.md,
-                borderTopWidth: 1,
-                borderTopColor: isDark ? colors.border : colors.borderLight,
+                color: colors.textSecondary,
+                textAlign: 'right',
+                marginTop: spacing.lg,
+                marginBottom: 8,
+                fontWeight: '700',
               },
             ]}
           >
-            <ToggleSwitch value={taskReminders} onValueChange={setTaskReminders} />
-            <View style={styles.switchTextCol}>
-              <Text
-                style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
-              >
-                یادآور سررسید تسک‌ها
-              </Text>
-              <Text
-                style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
-              >
-                ارسال هشدار قبل از فرارسیدن موعد انجام کار
-              </Text>
+            اعلان‌ها و یادآوری‌ها
+          </Text>
+          <Card variant="flat" style={{ padding: spacing.md }}>
+            <View style={styles.switchRow}>
+              <ToggleSwitch value={dailyBriefing} onValueChange={setDailyBriefing} />
+              <View style={styles.switchTextCol}>
+                <Text
+                  style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
+                >
+                  خلاصه برنامه صبحگاهی
+                </Text>
+                <Text
+                  style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
+                >
+                  ارسال اعلان مرور کارهای روزانه در ساعت ۸:۰۰ صبح
+                </Text>
+              </View>
             </View>
-          </View>
-        </Card>
 
-        {/* System & Architecture Info */}
-        <Text
-          style={[
-            typography.caption,
-            {
-              color: colors.textSecondary,
-              textAlign: 'right',
-              marginTop: spacing.lg,
-              marginBottom: 8,
-              fontWeight: '700',
-            },
-          ]}
-        >
-          اطلاعات سامانه
-        </Text>
-        <Card
-          variant="subtle"
-          style={{
-            padding: spacing.base,
-            borderColor: colors.border,
-            marginBottom: spacing.xxl,
-          }}
-        >
-          <View style={styles.statusRow}>
             <View
               style={[
-                styles.statusBadge,
-                { backgroundColor: colors.successSubtle, borderRadius: radii.full },
+                styles.switchRow,
+                {
+                  marginTop: spacing.md,
+                  paddingTop: spacing.md,
+                  borderTopWidth: 1,
+                  borderTopColor: isDark ? colors.border : colors.borderLight,
+                },
               ]}
             >
-              <Text style={[typography.caption, { color: colors.success, fontWeight: '700' }]}>
-                فعال
-              </Text>
+              <ToggleSwitch value={taskReminders} onValueChange={setTaskReminders} />
+              <View style={styles.switchTextCol}>
+                <Text
+                  style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
+                >
+                  یادآور سررسید تسک‌ها
+                </Text>
+                <Text
+                  style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
+                >
+                  ارسال هشدار قبل از فرارسیدن موعد انجام کار
+                </Text>
+              </View>
             </View>
-            <Text style={[typography.titleSmall, { color: colors.textPrimary }]}>
-              وضعیت ذخیره‌سازی محلی
-            </Text>
-          </View>
+          </Card>
 
+          {/* System & Architecture Info */}
           <Text
             style={[
-              typography.bodySmall,
-              { color: colors.textSecondary, textAlign: 'right', marginTop: 8, lineHeight: 20 },
+              typography.caption,
+              {
+                color: colors.textSecondary,
+                textAlign: 'right',
+                marginTop: spacing.lg,
+                marginBottom: 8,
+                fontWeight: '700',
+              },
             ]}
           >
-            • داده‌های تسک‌ها و یادداشت‌ها به صورت دائمی در دیتابیس محلی ذخیره می‌شوند.
-            {'\n'}• تمامی محاسبات تاریخ و زمان بر مبنای تقویم جلالی انجام می‌شود.
+            اطلاعات سامانه
           </Text>
-        </Card>
-      </ScrollView>
+          <Card
+            variant="subtle"
+            style={{
+              padding: spacing.lg,
+              borderColor: colors.border,
+              marginBottom: spacing.xxl,
+              alignItems: 'center',
+            }}
+          >
+            <Image
+              source={require('../../../assets/noyad-mark.png')}
+              style={{ width: 68, height: 68, borderRadius: 18, marginBottom: spacing.sm }}
+              resizeMode="contain"
+            />
+            <Text
+              style={[
+                typography.bodyLarge,
+                { color: colors.textPrimary, fontWeight: '700', marginBottom: 2 },
+              ]}
+            >
+              نویاد (Noyad)
+            </Text>
+            <Text
+              style={[
+                typography.caption,
+                { color: colors.textSecondary, textAlign: 'center', marginTop: 2 },
+              ]}
+            >
+              دستیار و برنامه‌ریز هوشمند • نسخه ۱.۰.۰
+            </Text>
+          </Card>
+        </ScrollView>
       </Animated.View>
     </AppScreen>
   );
@@ -582,8 +588,6 @@ const styles = StyleSheet.create({
   },
   infoDivider: {
     borderTopWidth: 1,
-    marginTop: 12,
-    paddingTop: 12,
   },
   infoRow: {
     flexDirection: 'row-reverse',

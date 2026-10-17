@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Ai-calender",
-    "slug": "Ai-calender",
-    "scheme": "ai-calender",
+    "name": "نویاد",
+    "slug": "noyad",
+    "scheme": "noyad",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,13 +12,18 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#F8F3EA",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize"
+    },
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F3EA"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -38,7 +43,15 @@
           ]
         }
       ],
-      "expo-splash-screen"
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#F8F3EA"
+        }
+      ]
     ]
   }
 }

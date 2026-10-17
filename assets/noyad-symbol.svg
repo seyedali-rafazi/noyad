@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="terracottaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#BA4E2F"/>
+      <stop offset="100%" stop-color="#A13820"/>
+    </linearGradient>
+    <linearGradient id="creamGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FAF5EE"/>
+      <stop offset="100%" stop-color="#F2ECE0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle Container -->
+  <rect x="16" y="16" width="480" height="480" rx="125" fill="url(#terracottaGrad)"/>
+
+  <!-- Top Binder Rings -->
+  <rect x="190" y="80" width="28" height="70" rx="14" fill="url(#creamGrad)"/>
+  <rect x="294" y="80" width="28" height="70" rx="14" fill="url(#creamGrad)"/>
+
+  <!-- Calendar Main Outer Shell -->
+  <path d="M 175 118 L 337 118 C 378 118 402 142 402 183 L 402 245 C 385 252 365 264 345 280 C 315 304 285 328 250 342 C 205 360 162 355 132 334 C 117 323 110 307 110 285 L 110 183 C 110 142 134 118 175 118 Z" 
+        fill="none" stroke="url(#creamGrad)" stroke-width="26" stroke-linejoin="round"/>
+
+  <!-- Grid Dots (Terracotta/Peach Accent) -->
+  <rect x="175" y="190" width="30" height="30" rx="7" fill="#F5A384"/>
+  <rect x="235" y="190" width="30" height="30" rx="7" fill="#F5A384"/>
+  <rect x="295" y="190" width="30" height="30" rx="7" fill="#F5A384"/>
+  <rect x="175" y="240" width="30" height="30" rx="7" fill="#F5A384"/>
+  <rect x="235" y="240" width="30" height="30" rx="7" fill="#F5A384"/>
+
+  <!-- Dynamic Wave Swoosh -->
+  <path d="M 125 315 C 160 375 260 365 345 305 C 385 277 420 240 432 235 C 418 290 375 338 315 368 C 248 402 170 380 130 325 Z" 
+        fill="url(#creamGrad)"/>
+
+  <!-- Peach Under-Wave Accent -->
+  <path d="M 235 368 C 285 378 350 350 395 295 C 375 348 325 380 250 376 Z" 
+        fill="#F5A384"/>
+</svg>

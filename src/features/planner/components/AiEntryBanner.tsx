@@ -48,7 +48,7 @@ export const AiEntryBanner: React.FC = () => {
                 { color: colors.textPrimary, textAlign: 'right' },
               ]}
             >
-              دستیار هوشمند برنامه‌ریزی
+              دستیار هوشمند نویاد
             </Text>
             <View
               style={[

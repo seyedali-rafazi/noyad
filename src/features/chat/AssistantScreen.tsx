@@ -8,6 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   Keyboard,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -87,7 +88,7 @@ export const AssistantScreen: React.FC = () => {
   return (
     <AppScreen>
       <AppHeader
-        title="دستیار هوشمند"
+        title="دستیار نویاد"
         rightAction={
           <View
             style={[
@@ -129,10 +130,15 @@ export const AssistantScreen: React.FC = () => {
                   {
                     backgroundColor: colors.accentSubtle,
                     borderRadius: radii.full,
+                    overflow: 'hidden',
                   },
                 ]}
               >
-                <Ionicons name="sparkles" size={32} color={colors.accent} />
+                <Image
+                  source={require('../../../assets/noyad-mark-transparent.png')}
+                  style={{ width: 44, height: 44 }}
+                  resizeMode="contain"
+                />
               </View>
               <Text
                 style={[
@@ -140,7 +146,7 @@ export const AssistantScreen: React.FC = () => {
                   { color: colors.textPrimary, marginBottom: 8, textAlign: 'center' },
                 ]}
               >
-                سلام! چطور می‌توانم کمکتان کنم؟
+                سلام! من نویاد هستم، چطور می‌توانم کمکتان کنم؟
               </Text>
               <Text
                 style={[
