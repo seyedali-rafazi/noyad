@@ -12,9 +12,22 @@ export const INITIAL_TASKS: Task[] = [];
 
 export const INITIAL_NOTES: Note[] = [];
 
+export type ProposedActionType =
+  | 'create_task'
+  | 'update_task'
+  | 'complete_task'
+  | 'delete_task'
+  | 'create_note'
+  | 'update_note'
+  | 'delete_note';
+
 export interface ProposedActionPreview {
-  type: 'create_task' | 'update_task' | 'delete_task';
+  type: ProposedActionType;
   title: string;
+  targetId?: string;
+  description?: string;
+  content?: string;
+  tags?: string[];
   dueDate?: string | null;
   dueDateLabel?: string;
   priority?: import('../../domain/types/common').TaskPriority;

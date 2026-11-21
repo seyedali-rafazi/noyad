@@ -20,7 +20,22 @@ export const ProposedActionCard: React.FC<ProposedActionCardProps> = ({
 
   if (isDismissed) return null;
 
-  const isDelete = action.type === 'delete_task' || action.isDestructive;
+  const isDelete =
+    action.type === 'delete_task' ||
+    action.type === 'delete_note' ||
+    action.isDestructive;
+
+  const actionTypeLabel: Record<ProposedActionPreview['type'], string> = {
+    create_task: 'افزودن تسک',
+    update_task: 'ویرایش تسک',
+    complete_task: 'تکمیل تسک',
+    delete_task: 'حذف تسک',
+    create_note: 'ثبت یادداشت',
+    update_note: 'ویرایش یادداشت',
+    delete_note: 'حذف یادداشت',
+  };
+
+  const badgeText = actionTypeLabel[action.type] ?? (isDelete ? 'عملیات حساس' : 'پیشنهاد دستیار');
 
   const handleConfirm = () => {
     setIsApplied(true);
@@ -62,7 +77,7 @@ export const ProposedActionCard: React.FC<ProposedActionCardProps> = ({
               { color: isDelete ? colors.danger : colors.accent, fontWeight: '700' },
             ]}
           >
-            {isDelete ? 'عملیات حساس' : 'پیشنهاد دستیار'}
+            {badgeText}
           </Text>
         </View>
 
@@ -82,6 +97,19 @@ export const ProposedActionCard: React.FC<ProposedActionCardProps> = ({
       >
         {action.title}
       </Text>
+
+      {/* Optional Note Content Preview */}
+      {action.content ? (
+        <Text
+          numberOfLines={3}
+          style={[
+            typography.bodySmall,
+            { color: colors.textSecondary, textAlign: 'right', marginTop: 4 },
+          ]}
+        >
+          {action.content}
+        </Text>
+      ) : null}
 
       {/* Meta tags */}
       <View style={styles.metaRow}>

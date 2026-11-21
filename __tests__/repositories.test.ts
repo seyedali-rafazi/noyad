@@ -56,6 +56,7 @@ describe('SQLite Repositories & Domain Mapping Tests', () => {
         createdAt: '2026-10-20T08:00:00.000Z',
         updatedAt: '2026-10-21T15:00:00.000Z',
         timezone: 'Asia/Tehran',
+        reminderOffsetMinutes: null,
       };
 
       const domain = mapTaskRecordToDomain(record);

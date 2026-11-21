@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../../shared/theme';
 import {
   getJalaliMonthGrid,
-  PERSIAN_WEEKDAY_NAMES_SHORT,
+  getPersianWeekdayNamesShort,
   JalaliCalendarDay,
   isSameJalaliDay,
   addJalaliMonths,
   subJalaliMonths,
   formatJalali,
+  useCalendarSettingsStore,
+  weekStartToDayIndex,
 } from '../../../core/calendar';
 
 interface TaskDatePickerProps {
@@ -23,8 +25,11 @@ export const TaskDatePicker: React.FC<TaskDatePickerProps> = ({
 }) => {
   const { colors, radii, spacing, typography, fonts, isDark } = useTheme();
   const [currentMonthDate, setCurrentMonthDate] = useState<Date>(selectedDate);
+  const weekStart = useCalendarSettingsStore((s) => s.weekStart);
+  const weekStartsOn = weekStartToDayIndex(weekStart);
 
-  const gridDays = getJalaliMonthGrid(currentMonthDate, selectedDate);
+  const weekdayHeaders = getPersianWeekdayNamesShort(weekStartsOn);
+  const gridDays = getJalaliMonthGrid(currentMonthDate, selectedDate, weekStartsOn);
   const monthYearLabel = formatJalali(currentMonthDate, 'MMMM yyyy');
 
   const handlePrevMonth = () => {
@@ -75,22 +80,22 @@ export const TaskDatePicker: React.FC<TaskDatePickerProps> = ({
         </Pressable>
       </View>
 
-      {/* Weekday Labels (Saturday to Friday) */}
+      {/* Weekday Labels */}
       <View style={styles.weekdayRow}>
-        {PERSIAN_WEEKDAY_NAMES_SHORT.map((weekday, idx) => (
+        {weekdayHeaders.map((weekday, idx) => (
           <View key={idx} style={styles.weekdayCell}>
             <Text
               style={[
                 typography.caption,
                 {
                   fontFamily: fonts.semiBold,
-                  color: idx === 6 ? colors.danger : colors.textMuted,
+                  color: weekday.isFriday ? colors.danger : colors.textMuted,
                   fontSize: 11,
                   fontWeight: '600',
                 },
               ]}
             >
-              {weekday}
+              {weekday.label}
             </Text>
           </View>
         ))}

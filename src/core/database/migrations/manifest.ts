@@ -31,7 +31,8 @@ export const migrationsManifest: MigrationManifest = {
 	\`completed_at\` text,
 	\`created_at\` text NOT NULL,
 	\`updated_at\` text NOT NULL,
-	\`timezone\` text
+	\`timezone\` text,
+	\`reminder_offset_minutes\` integer
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS \`notes\` (
@@ -70,6 +71,11 @@ CREATE TABLE IF NOT EXISTS \`ai_api_keys\` (
 	\`status\` text DEFAULT 'active' NOT NULL,
 	\`failure_count\` integer DEFAULT 0 NOT NULL,
 	\`created_at\` text NOT NULL,
+	\`updated_at\` text NOT NULL
+);`,
+    m0001: `CREATE TABLE IF NOT EXISTS \`app_settings\` (
+	\`key\` text PRIMARY KEY NOT NULL,
+	\`value\` text NOT NULL,
 	\`updated_at\` text NOT NULL
 );`,
   },

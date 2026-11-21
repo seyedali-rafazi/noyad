@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Keyboard,
   Image,
+  Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +32,7 @@ export const AssistantScreen: React.FC = () => {
   const confirmAction = useChatStore(s => s.confirmAction);
   const activeConfirmation = useChatStore(s => s.activeConfirmation);
   const dismissConfirmation = useChatStore(s => s.dismissConfirmation);
+  const clearChat = useChatStore(s => s.clearChat);
 
   const flatListRef = useRef<FlatList>(null);
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
@@ -74,8 +76,8 @@ export const AssistantScreen: React.FC = () => {
   const confirmationReq: ConfirmationRequest | null = activeConfirmation
     ? {
         token: 'conf-chat-preview',
-        actionType: 'delete_task',
-        targetId: 'chat-target',
+        actionType: activeConfirmation.actionType,
+        targetId: activeConfirmation.targetId,
         targetTitle: activeConfirmation.title,
         promptPersian: activeConfirmation.description,
         promptEnglish: 'Confirm deletion',
@@ -90,19 +92,35 @@ export const AssistantScreen: React.FC = () => {
       <AppHeader
         title="دستیار نویاد"
         rightAction={
-          <View
-            style={[
-              styles.prototypeTag,
-              {
-                backgroundColor: 'rgba(249, 115, 22, 0.14)',
-                borderRadius: radii.full,
-              },
-            ]}
-          >
-            <Ionicons name="flash" size={13} color="#f97316" />
-            <Text style={[typography.caption, { color: '#f97316', fontWeight: '700' }]}>
-              GPT 20B
-            </Text>
+          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+            <View
+              style={[
+                styles.prototypeTag,
+                {
+                  backgroundColor: 'rgba(249, 115, 22, 0.14)',
+                  borderRadius: radii.full,
+                },
+              ]}
+            >
+              <Ionicons name="flash" size={13} color="#f97316" />
+              <Text style={[typography.caption, { color: '#f97316', fontWeight: '700' }]}>
+                GPT 20B
+              </Text>
+            </View>
+            {messages.length > 0 && (
+              <Pressable
+                onPress={() => clearChat()}
+                hitSlop={8}
+                accessibilityLabel="پاک‌سازی گفتگو"
+                style={{
+                  padding: 6,
+                  borderRadius: radii.full,
+                  backgroundColor: colors.surfaceRaised,
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color={colors.textSecondary} />
+              </Pressable>
+            )}
           </View>
         }
       />

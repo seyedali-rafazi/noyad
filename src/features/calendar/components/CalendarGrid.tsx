@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useTheme } from '../../../shared/theme';
 import {
   getJalaliMonthGrid,
-  PERSIAN_WEEKDAY_NAMES_SHORT,
+  getPersianWeekdayNamesShort,
   JalaliCalendarDay,
   isSameJalaliDay,
+  useCalendarSettingsStore,
+  weekStartToDayIndex,
 } from '../../../core/calendar';
 import { Task } from '../../../domain/models/task';
 
@@ -23,8 +25,11 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onSelectDate,
 }) => {
   const { colors, radii, typography, fonts, isDark } = useTheme();
+  const weekStart = useCalendarSettingsStore((s) => s.weekStart);
+  const weekStartsOn = weekStartToDayIndex(weekStart);
 
-  const gridDays = getJalaliMonthGrid(currentMonthDate, selectedDate);
+  const weekdayHeaders = getPersianWeekdayNamesShort(weekStartsOn);
+  const gridDays = getJalaliMonthGrid(currentMonthDate, selectedDate, weekStartsOn);
 
   // Check if a day has tasks scheduled
   const dayHasTasks = (date: Date) => {
@@ -35,19 +40,19 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
     <View style={styles.container}>
       {/* 7-column Weekday Labels */}
       <View style={styles.weekdayRow}>
-        {PERSIAN_WEEKDAY_NAMES_SHORT.map((weekday, idx) => (
+        {weekdayHeaders.map((weekday, idx) => (
           <View key={idx} style={styles.weekdayCell}>
             <Text
               style={[
                 typography.caption,
                 {
                   fontFamily: fonts.semiBold,
-                  color: idx === 6 ? colors.danger : colors.textMuted, // جمعه (Friday) is red in Persian calendar
+                  color: weekday.isFriday ? colors.danger : colors.textMuted, // جمعه (Friday) is red in Persian calendar
                   fontWeight: '600',
                 },
               ]}
             >
-              {weekday}
+              {weekday.label}
             </Text>
           </View>
         ))}

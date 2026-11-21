@@ -65,6 +65,31 @@ export const PERSIAN_WEEKDAY_NAMES_SHORT = [
   'ج',
 ] as const;
 
+/**
+ * Returns short Persian weekday labels rotated to match the configured start of week.
+ * weekStartsOn: 6 = Saturday (default), 0 = Sunday, 1 = Monday.
+ */
+export function getPersianWeekdayNamesShort(weekStartsOn: 0 | 1 | 6 = 6): {
+  label: string;
+  isFriday: boolean;
+}[] {
+  // Base order starting from Saturday (index 0 = Sat, ..., index 6 = Fri)
+  const base = PERSIAN_WEEKDAY_NAMES_SHORT.map((label, idx) => ({
+    label,
+    isFriday: idx === 6,
+  }));
+
+  if (weekStartsOn === 0) {
+    // Sunday first: rotate by 1
+    return [...base.slice(1), base[0]!];
+  }
+  if (weekStartsOn === 1) {
+    // Monday first: rotate by 2
+    return [...base.slice(2), ...base.slice(0, 2)];
+  }
+  return base;
+}
+
 const PERSIAN_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 const ASCII_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
@@ -256,18 +281,18 @@ export interface JalaliCalendarDay {
 /**
  * Generates the complete 7-column calendar grid for a given Jalali month.
  * Automatically pads days from the preceding and succeeding months so all rows
- * start on Saturday (weekStartsOn: 6).
+ * start on the configured weekday (default Saturday: weekStartsOn = 6).
  */
 export function getJalaliMonthGrid(
   currentMonthDate: Date,
-  selectedDate?: Date
+  selectedDate?: Date,
+  weekStartsOn: 0 | 1 | 6 = 6
 ): JalaliCalendarDay[] {
   const som = startOfMonth(currentMonthDate);
   const eom = endOfMonth(currentMonthDate);
 
-  // In Persian calendar, week starts on Saturday (which is 6 in date-fns weekday indexing)
-  const gridStart = startOfWeek(som, { locale: faIR, weekStartsOn: 6 });
-  const gridEnd = endOfWeek(eom, { locale: faIR, weekStartsOn: 6 });
+  const gridStart = startOfWeek(som, { locale: faIR, weekStartsOn });
+  const gridEnd = endOfWeek(eom, { locale: faIR, weekStartsOn });
 
   const daysInterval = eachDayOfInterval({ start: gridStart, end: gridEnd });
   const targetMonthNum = parseInt(format(currentMonthDate, 'M'), 10);

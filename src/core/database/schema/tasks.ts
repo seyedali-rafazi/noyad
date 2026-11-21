@@ -18,6 +18,7 @@ export const tasks = sqliteTable('tasks', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
   timezone: text('timezone'),
+  reminderOffsetMinutes: integer('reminder_offset_minutes'),
 });
 
 export type TaskTable = typeof tasks;

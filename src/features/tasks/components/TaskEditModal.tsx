@@ -24,6 +24,7 @@ import {
 } from '../../../core/calendar';
 import { TaskDatePicker } from './TaskDatePicker';
 import { ScrollTimePicker } from './ScrollTimePicker';
+import { REMINDER_OFFSET_OPTIONS } from '../../../core/notifications';
 
 export interface TaskEditModalProps {
   visible: boolean;
@@ -36,6 +37,7 @@ export interface TaskEditModalProps {
     dueDate?: string | null;
     isAllDay?: boolean;
     priority?: TaskPriority;
+    reminderOffsetMinutes?: number | null;
   }) => void;
 }
 
@@ -80,6 +82,13 @@ const TaskForm: React.FC<{
     return 0;
   });
 
+  const [reminderOffset, setReminderOffset] = useState<number | null>(() => {
+    if (task && task.reminderOffsetMinutes !== undefined) {
+      return task.reminderOffsetMinutes;
+    }
+    return 10;
+  });
+
   const [error, setError] = useState('');
 
   const isTodaySelected =
@@ -116,6 +125,7 @@ const TaskForm: React.FC<{
       dueDate: dueDateIso,
       priority,
       isAllDay,
+      reminderOffsetMinutes: hasDueDate ? reminderOffset : null,
     });
     onClose();
   };
@@ -534,6 +544,67 @@ const TaskForm: React.FC<{
           </View>
         )}
 
+        {/* Reminder Offset Section */}
+        {hasDueDate && (
+          <View style={{ marginTop: spacing.md }}>
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 8, gap: 6 }}>
+              <Ionicons name="notifications-outline" size={16} color={colors.accent} />
+              <Text
+                style={[
+                  typography.caption,
+                  {
+                    color: colors.textSecondary,
+                    textAlign: 'right',
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                یادآور و اعلان هشدار
+              </Text>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ flexDirection: 'row-reverse', gap: 8, paddingVertical: 4 }}
+            >
+              {REMINDER_OFFSET_OPTIONS.map((opt) => {
+                const isSelected = reminderOffset === opt.offsetMinutes;
+                return (
+                  <Pressable
+                    key={String(opt.offsetMinutes)}
+                    onPress={() => setReminderOffset(opt.offsetMinutes)}
+                    style={[
+                      styles.reminderPill,
+                      {
+                        backgroundColor: isSelected ? colors.accent : colors.surfaceRaised,
+                        borderColor: isSelected
+                          ? colors.accent
+                          : isDark
+                          ? colors.border
+                          : colors.borderLight,
+                        borderRadius: radii.full,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        typography.caption,
+                        {
+                          color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                          fontWeight: isSelected ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {opt.labelPersian}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={[styles.actionRow, { marginTop: spacing.xl }]}>
           <Button
@@ -686,6 +757,13 @@ const styles = StyleSheet.create({
   timeTypePill: {
     paddingHorizontal: 10,
     paddingVertical: 4,
+  },
+  reminderPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionRow: {
     flexDirection: 'row-reverse',

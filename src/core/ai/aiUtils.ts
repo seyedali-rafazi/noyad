@@ -130,6 +130,7 @@ export function getAiSystemPrompt(): string {
   const todayTasks = planner.getTasksForDate(today);
   const tomorrowTasks = planner.getTasksForDate(tomorrow);
   const overdueTasks = planner.getOverdueTasks();
+  const recentNotes = planner.notes.slice(0, 10);
 
   const priorityLabelMap: Record<string, string> = {
     urgent: 'فوری',
@@ -145,7 +146,7 @@ export function getAiSystemPrompt(): string {
           .map((t, idx) => {
             const timeStr = t.dueDate ? formatPersianTime(t.dueDate) : '';
             const priorityStr = priorityLabelMap[t.priority] || 'متوسط';
-            return `${idx + 1}. ${t.title}${timeStr ? ` (ساعت: ${timeStr})` : ''} [وضعیت: ${
+            return `${idx + 1}. ${t.title}${timeStr ? ` (ساعت: ${timeStr})` : ''} [شناسه: ${t.id}، وضعیت: ${
               t.status === 'completed' ? 'انجام شده' : 'در انتظار'
             }، اولویت: ${priorityStr}]`;
           })
@@ -158,7 +159,7 @@ export function getAiSystemPrompt(): string {
           .map((t, idx) => {
             const timeStr = t.dueDate ? formatPersianTime(t.dueDate) : '';
             const priorityStr = priorityLabelMap[t.priority] || 'متوسط';
-            return `${idx + 1}. ${t.title}${timeStr ? ` (ساعت: ${timeStr})` : ''} [وضعیت: ${
+            return `${idx + 1}. ${t.title}${timeStr ? ` (ساعت: ${timeStr})` : ''} [شناسه: ${t.id}، وضعیت: ${
               t.status === 'completed' ? 'انجام شده' : 'در انتظار'
             }، اولویت: ${priorityStr}]`;
           })
@@ -171,8 +172,15 @@ export function getAiSystemPrompt(): string {
           .map((t, idx) => {
             const dateStr = t.dueDate ? formatJalaliShortDate(t.dueDate) : '';
             const priorityStr = priorityLabelMap[t.priority] || 'متوسط';
-            return `${idx + 1}. ${t.title}${dateStr ? ` - ${dateStr}` : ''} [اولویت: ${priorityStr}]`;
+            return `${idx + 1}. ${t.title}${dateStr ? ` - ${dateStr}` : ''} [شناسه: ${t.id}، اولویت: ${priorityStr}]`;
           })
+          .join('\n');
+
+  const notesSummary =
+    recentNotes.length === 0
+      ? 'هیچ یادداشتی ثبت نشده است.'
+      : recentNotes
+          .map((n, idx) => `${idx + 1}. ${n.title} [شناسه: ${n.id}]`)
           .join('\n');
 
   return `شما یک دستیار هوشمند، بسیار منظم، دقیق و فارسی‌زبان برای مدیریت زمان و برنامه‌ریزی روزانه بر مبنای گاه‌شماری هجری شمسی (جلالی) در اپلیکیشن «نویاد» (Noyad) هستید.
@@ -195,6 +203,9 @@ ${tomorrowTasksSummary}
 - کارهای عقب‌افتاده:
 ${overdueSummary}
 
+- یادداشت‌های اخیر کاربر:
+${notesSummary}
+
 قوانین رفتار و پاسخ‌دهی (بسیار مهم و الزامی):
 ۱. همواره به زبان فارسی سلیس، محترمانه، پرانرژی و خلاصه پاسخ دهید.
 ۲. تقویم اصلی کاربر تقویم شمسی (جلالی) است و آغاز هفته شنبه می‌باشد.
@@ -210,11 +221,15 @@ ${overdueSummary}
 - هنگام نمایش کارهای عقب‌افتاده یا هر لیست کاری، صرفاً و منحصراً از یک لیست شماره‌دار ساده و خطی از ۱ تا آخر استفاده کنید؛ دقیقاً به این فرمت نمونه:
   ۱. عنوان کار اول - ۱۷ مهر
   ۲. عنوان کار دوم - ۲۰ مهر
-۵. در صورتی که کاربر از شما خواست کاری، تسکی، قراری یا برنامه‌ای ثبت، اضافه یا تنظیم کند، علاوه بر پاسخ متنی زیبا و دلگرم‌کننده، در انتهای پیام خود یک بلاک کد JSON با فرمت زیر اضافه کنید تا اپلیکیشن بتواند آن را مستقیماً به کارت تعاملی تایید تبدیل کند:
+۵. در صورتی که کاربر از شما خواست کاری، تسکی، قراری یا یادداشتی را ثبت، ویرایش، تکمیل یا حذف کند، علاوه بر پاسخ متنی زیبا و دلگرم‌کننده، در انتهای پیام خود یک بلاک کد JSON با یکی از اکشن‌های مجاز زیر اضافه کنید تا اپلیکیشن آن را به کارت تعاملی تایید تبدیل کند:
+- اکشن‌های مجاز: \`create_task\`، \`update_task\`، \`complete_task\`، \`delete_task\`، \`create_note\`، \`update_note\`، \`delete_note\`
 \`\`\`json
 {
   "action": "create_task",
-  "title": "عنوان کار به فارسی",
+  "title": "عنوان کار یا یادداشت به فارسی",
+  "targetId": "اختیاری: شناسه تسک یا یادداشت برای ویرایش/تکمیل/حذف",
+  "content": "اختیاری: متن یادداشت برای create_note یا update_note",
+  "tags": ["اختیاری", "برچسب"],
   "dueDateLabel": "مثلا: فردا ساعت ۱۰:۰۰ یا امروز ۱۸:۰۰",
   "dueDate": "${tomorrow.toISOString()}",
   "priority": "low" | "medium" | "high" | "urgent",
@@ -367,7 +382,26 @@ export function extractActionFromText(text: string): {
     let proposedAction: ProposedActionPreview | undefined = undefined;
 
     const actionType = String(parsed.action || parsed.type || '').toLowerCase();
-    const isTaskOrMeeting =
+    const priorityMap: Record<string, TaskPriority> = {
+      urgent: 'urgent',
+      high: 'high',
+      medium: 'medium',
+      low: 'low',
+      فوری: 'urgent',
+      زیاد: 'high',
+      بالا: 'high',
+      متوسط: 'medium',
+      پایین: 'low',
+      کم: 'low',
+    };
+    const priorityLabels: Record<TaskPriority, string> = {
+      urgent: 'فوری',
+      high: 'بالا',
+      medium: 'متوسط',
+      low: 'پایین',
+    };
+
+    const isCreateTask =
       actionType === 'create_task' ||
       actionType === 'add_task' ||
       actionType === 'new_task' ||
@@ -382,40 +416,84 @@ export function extractActionFromText(text: string): {
       actionType === 'meeting' ||
       actionType === 'event';
 
-    if (isTaskOrMeeting && parsed.title) {
+    const isUpdateTask = actionType === 'update_task' || actionType === 'edit_task';
+    const isCompleteTask =
+      actionType === 'complete_task' || actionType === 'done_task' || actionType === 'finish_task';
+    const isDeleteTask = actionType === 'delete_task' || actionType === 'remove_task';
+
+    const isCreateNote =
+      actionType === 'create_note' || actionType === 'add_note' || actionType === 'new_note';
+    const isUpdateNote = actionType === 'update_note' || actionType === 'edit_note';
+    const isDeleteNote = actionType === 'delete_note' || actionType === 'remove_note';
+
+    if (isCreateTask && parsed.title) {
       const dueDateIso = resolveDueDateIso(parsed.dueDate, parsed.dueDateLabel);
-
-      const priorityMap: Record<string, TaskPriority> = {
-        urgent: 'urgent',
-        high: 'high',
-        medium: 'medium',
-        low: 'low',
-        فوری: 'urgent',
-        زیاد: 'high',
-        بالا: 'high',
-        متوسط: 'medium',
-        پایین: 'low',
-        کم: 'low',
-      };
-
       const mappedPriority: TaskPriority =
         priorityMap[parsed.priority] || priorityMap[parsed.priorityLabel] || 'medium';
 
-      const priorityLabels: Record<TaskPriority, string> = {
-        urgent: 'فوری',
-        high: 'بالا',
-        medium: 'متوسط',
-        low: 'پایین',
-      };
-
       proposedAction = {
         type: 'create_task',
-        title: parsed.title,
+        title: String(parsed.title),
+        description: typeof parsed.description === 'string' ? parsed.description : undefined,
         dueDate: dueDateIso,
         dueDateLabel: parsed.dueDateLabel || 'فردا',
         priority: mappedPriority,
         priorityLabel: parsed.priorityLabel || priorityLabels[mappedPriority],
         isDestructive: false,
+      };
+    } else if (isUpdateTask && (parsed.title || parsed.targetId)) {
+      const mappedPriority: TaskPriority | undefined =
+        priorityMap[parsed.priority] || priorityMap[parsed.priorityLabel];
+      const hasDueDate = Boolean(parsed.dueDate || parsed.dueDateLabel);
+      proposedAction = {
+        type: 'update_task',
+        targetId: typeof parsed.targetId === 'string' ? parsed.targetId : undefined,
+        title: String(parsed.title || 'ویرایش تسک'),
+        description: typeof parsed.description === 'string' ? parsed.description : undefined,
+        dueDate: hasDueDate ? resolveDueDateIso(parsed.dueDate, parsed.dueDateLabel) : undefined,
+        dueDateLabel: parsed.dueDateLabel,
+        priority: mappedPriority,
+        priorityLabel:
+          parsed.priorityLabel || (mappedPriority ? priorityLabels[mappedPriority] : undefined),
+        isDestructive: false,
+      };
+    } else if (isCompleteTask && (parsed.title || parsed.targetId)) {
+      proposedAction = {
+        type: 'complete_task',
+        targetId: typeof parsed.targetId === 'string' ? parsed.targetId : undefined,
+        title: String(parsed.title || 'تکمیل تسک'),
+        isDestructive: false,
+      };
+    } else if (isDeleteTask && (parsed.title || parsed.targetId)) {
+      proposedAction = {
+        type: 'delete_task',
+        targetId: typeof parsed.targetId === 'string' ? parsed.targetId : undefined,
+        title: String(parsed.title || 'حذف تسک'),
+        isDestructive: true,
+      };
+    } else if (isCreateNote && (parsed.title || parsed.content)) {
+      proposedAction = {
+        type: 'create_note',
+        title: String(parsed.title || 'یادداشت جدید'),
+        content: typeof parsed.content === 'string' ? parsed.content : String(parsed.description || ''),
+        tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : undefined,
+        isDestructive: false,
+      };
+    } else if (isUpdateNote && (parsed.title || parsed.targetId)) {
+      proposedAction = {
+        type: 'update_note',
+        targetId: typeof parsed.targetId === 'string' ? parsed.targetId : undefined,
+        title: String(parsed.title || 'ویرایش یادداشت'),
+        content: typeof parsed.content === 'string' ? parsed.content : undefined,
+        tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : undefined,
+        isDestructive: false,
+      };
+    } else if (isDeleteNote && (parsed.title || parsed.targetId)) {
+      proposedAction = {
+        type: 'delete_note',
+        targetId: typeof parsed.targetId === 'string' ? parsed.targetId : undefined,
+        title: String(parsed.title || 'حذف یادداشت'),
+        isDestructive: true,
       };
     }
 

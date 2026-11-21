@@ -6,11 +6,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.noyad.app"
     },
     "android": {
+      "package": "com.noyad.app",
       "adaptiveIcon": {
         "backgroundColor": "#F8F3EA",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -32,6 +34,13 @@
       "expo-router",
       "expo-sqlite",
       "expo-asset",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#C65D2E"
+        }
+      ],
       [
         "expo-font",
         {

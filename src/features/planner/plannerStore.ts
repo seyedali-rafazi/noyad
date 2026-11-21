@@ -6,6 +6,12 @@ import { TaskPriority, TaskStatus } from '../../domain/types/common';
 import { INITIAL_TASKS, INITIAL_NOTES } from '../../shared/preview/mockData';
 import { isSameJalaliDay, isOverdue } from '../../core/calendar';
 import { taskRepository, noteRepository } from '../../core/database/repositories';
+import {
+  scheduleTaskReminder,
+  cancelTaskReminder,
+  syncAllTaskReminders,
+} from '../../core/notifications';
+import { useNotificationStore } from '../../core/notifications/notificationStore';
 
 const WEB_TASKS_KEY = 'ai_calender_tasks';
 const WEB_NOTES_KEY = 'ai_calender_notes';
@@ -61,6 +67,7 @@ interface PlannerState {
     dueDate?: string | null;
     isAllDay?: boolean;
     priority?: TaskPriority;
+    reminderOffsetMinutes?: number | null;
   }) => Task;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -137,6 +144,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
         });
         savePlannerToWebStorage(dbTasks, dbNotes);
       }
+
+      // Sync active task reminders
+      const { taskRemindersEnabled, defaultReminderOffsetMinutes } = useNotificationStore.getState();
+      const currentTasks = get().tasks;
+      syncAllTaskReminders(currentTasks, taskRemindersEnabled, defaultReminderOffsetMinutes).catch(() => {});
     } catch (err) {
       if (Platform.OS !== 'web') {
         console.warn('Failed to load from SQLite database, keeping memory/web state:', err);
@@ -169,7 +181,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     });
 
     if (targetTask) {
-      taskRepository.update(targetTask).catch((err) => {
+      const resolvedTask = targetTask as Task;
+      if (resolvedTask.status === 'completed') {
+        cancelTaskReminder(resolvedTask.id).catch(() => {});
+      } else if (useNotificationStore.getState().taskRemindersEnabled) {
+        const offset = useNotificationStore.getState().defaultReminderOffsetMinutes;
+        scheduleTaskReminder(resolvedTask, offset).catch(() => {});
+      }
+
+      taskRepository.update(resolvedTask).catch((err) => {
         if (Platform.OS !== 'web') {
           console.error('Failed to update task in SQLite:', err);
         }
@@ -187,6 +207,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       isAllDay: params.isAllDay ?? false,
       priority: params.priority ?? 'medium',
       status: 'pending',
+      reminderOffsetMinutes: params.reminderOffsetMinutes,
     });
 
     set((state) => {
@@ -194,6 +215,11 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
       savePlannerToWebStorage(nextTasks, state.notes);
       return { tasks: nextTasks };
     });
+
+    if (useNotificationStore.getState().taskRemindersEnabled) {
+      const offset = useNotificationStore.getState().defaultReminderOffsetMinutes;
+      scheduleTaskReminder(newTask, offset).catch(() => {});
+    }
 
     taskRepository.create(newTask).catch((err) => {
       if (Platform.OS !== 'web') {
@@ -221,7 +247,15 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
     });
 
     if (targetTask) {
-      taskRepository.update(targetTask).catch((err) => {
+      const resolvedTask = targetTask as Task;
+      if (resolvedTask.status === 'completed' || resolvedTask.status === 'cancelled') {
+        cancelTaskReminder(resolvedTask.id).catch(() => {});
+      } else if (useNotificationStore.getState().taskRemindersEnabled) {
+        const offset = useNotificationStore.getState().defaultReminderOffsetMinutes;
+        scheduleTaskReminder(resolvedTask, offset).catch(() => {});
+      }
+
+      taskRepository.update(resolvedTask).catch((err) => {
         if (Platform.OS !== 'web') {
           console.error('Failed to update task in SQLite:', err);
         }
@@ -230,6 +264,8 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   },
 
   deleteTask: (id) => {
+    cancelTaskReminder(id).catch(() => {});
+
     set((state) => {
       const nextTasks = state.tasks.filter((t) => t.id !== id);
       savePlannerToWebStorage(nextTasks, state.notes);

@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { initializeDatabase, applyMigrations } from '../src/core/database';
 import { usePlannerStore } from '../src/features/planner/plannerStore';
+import { useChatStore } from '../src/features/chat/chatStore';
 import { useAiSettingsStore } from '../src/core/ai/aiSettingsStore';
+import { useNotificationStore, setupNotificationListeners } from '../src/core/notifications';
+import { useCalendarSettingsStore } from '../src/core/calendar';
+import { useThemeStore } from '../src/shared/theme';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -49,8 +53,12 @@ export default function RootLayout() {
         initializeDatabase();
         await applyMigrations();
         await Promise.all([
+          useThemeStore.getState().initializeTheme(),
+          useCalendarSettingsStore.getState().initializeCalendarSettings(),
           usePlannerStore.getState().initializeFromDatabase(),
+          useChatStore.getState().initializeFromDatabase(),
           useAiSettingsStore.getState().loadKeys(),
+          useNotificationStore.getState().initialize(),
         ]);
       } catch (err) {
         console.warn('Database bootstrap warning:', err);
@@ -60,6 +68,23 @@ export default function RootLayout() {
     }
 
     bootstrapDatabase();
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = setupNotificationListeners({
+      onSelectTask: () => {
+        try {
+          router.navigate('/(tabs)/tasks');
+        } catch {}
+      },
+      onOpenBriefing: () => {
+        try {
+          router.navigate('/(tabs)');
+        } catch {}
+      },
+    });
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {

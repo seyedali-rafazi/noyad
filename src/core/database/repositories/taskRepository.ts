@@ -23,6 +23,7 @@ export function mapTaskRecordToDomain(record: TaskSelect): Task {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     timezone: record.timezone ?? undefined,
+    reminderOffsetMinutes: record.reminderOffsetMinutes ?? null,
   });
 }
 
@@ -39,6 +40,7 @@ export function mapTaskDomainToInsert(task: Task) {
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     timezone: task.timezone ?? null,
+    reminderOffsetMinutes: task.reminderOffsetMinutes ?? null,
   };
 }
 

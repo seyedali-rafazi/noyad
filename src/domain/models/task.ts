@@ -43,6 +43,11 @@ export interface Task {
    * Timezone in which the task was scheduled (e.g. 'Asia/Tehran').
    */
   readonly timezone?: string;
+  /**
+   * Reminder lead time in minutes before dueDate (e.g. 0, 10, 30, 60, 1440).
+   * Null if no reminder is scheduled.
+   */
+  readonly reminderOffsetMinutes?: number | null;
 }
 
 /**
@@ -60,6 +65,7 @@ export interface CreateTaskProps {
   readonly createdAt?: IsoDateTimeString;
   readonly updatedAt?: IsoDateTimeString;
   readonly timezone?: string;
+  readonly reminderOffsetMinutes?: number | null;
 }
 
 /**
@@ -88,5 +94,6 @@ export function createTask(props: CreateTaskProps): Task {
     createdAt: props.createdAt ?? now,
     updatedAt: props.updatedAt ?? now,
     timezone: props.timezone,
+    reminderOffsetMinutes: props.reminderOffsetMinutes,
   };
 }

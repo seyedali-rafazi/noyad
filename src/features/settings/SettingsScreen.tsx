@@ -8,18 +8,41 @@ import { Card } from '../../shared/components/Card';
 import { TextInputField } from '../../shared/components/TextInputField';
 import { Button } from '../../shared/components/Button';
 import { ToggleSwitch } from '../../shared/components/ToggleSwitch';
-import { DEFAULT_TIMEZONE } from '../../core/calendar';
+import {
+  DEFAULT_TIMEZONE,
+  toPersianDigits,
+  useCalendarSettingsStore,
+  type WeekStartOption,
+} from '../../core/calendar';
 import { useAiSettingsStore } from '../../core/ai/aiSettingsStore';
 import { useScreenModalAnimation } from '../../shared/hooks';
+import { useNotificationStore } from '../../core/notifications/notificationStore';
+import { syncAllTaskReminders } from '../../core/notifications/scheduler';
+import { usePlannerStore } from '../planner/plannerStore';
 
 export const SettingsScreen: React.FC = () => {
   const { handleClose: handleBack, animatedStyle } = useScreenModalAnimation();
   const { colors, radii, spacing, typography, themePreference, setThemePreference, isDark } =
     useTheme();
 
-  const [weekStart, setWeekStart] = useState<'saturday' | 'sunday' | 'monday'>('saturday');
-  const [dailyBriefing, setDailyBriefing] = useState(true);
-  const [taskReminders, setTaskReminders] = useState(true);
+  const weekStart = useCalendarSettingsStore(s => s.weekStart);
+  const setWeekStart = useCalendarSettingsStore(s => s.setWeekStart);
+
+  // Notification Store state & actions
+  const taskReminders = useNotificationStore(s => s.taskRemindersEnabled);
+  const setTaskRemindersEnabled = useNotificationStore(s => s.setTaskRemindersEnabled);
+  const dailyBriefing = useNotificationStore(s => s.dailyBriefingEnabled);
+  const setDailyBriefingEnabled = useNotificationStore(s => s.setDailyBriefingEnabled);
+  const dailyBriefingHour = useNotificationStore(s => s.dailyBriefingHour);
+  const dailyBriefingMinute = useNotificationStore(s => s.dailyBriefingMinute);
+  const setDailyBriefingTime = useNotificationStore(s => s.setDailyBriefingTime);
+  const defaultReminderOffset = useNotificationStore(s => s.defaultReminderOffsetMinutes);
+  const setDefaultReminderOffset = useNotificationStore(s => s.setDefaultReminderOffsetMinutes);
+  const permissionStatus = useNotificationStore(s => s.permissionStatus);
+  const requestPermissions = useNotificationStore(s => s.requestPermissions);
+  const sendTestNotification = useNotificationStore(s => s.sendTestNotification);
+  const isSendingTest = useNotificationStore(s => s.isSendingTest);
+  const [notificationTestFeedback, setNotificationTestFeedback] = useState<string | null>(null);
 
   // Groq AI Settings state
   const keys = useAiSettingsStore(s => s.keys);
@@ -75,11 +98,24 @@ export const SettingsScreen: React.FC = () => {
     { key: 'system', label: 'سیستم', icon: 'phone-portrait-outline' },
   ];
 
-  const weekStartOptions = [
+  const weekStartOptions: { key: WeekStartOption; label: string }[] = [
     { key: 'saturday', label: 'شنبه (پیش‌فرض ایران)' },
     { key: 'sunday', label: 'یک‌شنبه' },
     { key: 'monday', label: 'دوشنبه' },
   ];
+
+  const briefingTimePresets = [
+    { label: '۰۷:۰۰', hour: 7, minute: 0 },
+    { label: '۰۷:۳۰', hour: 7, minute: 30 },
+    { label: '۰۸:۰۰', hour: 8, minute: 0 },
+    { label: '۰۸:۳۰', hour: 8, minute: 30 },
+    { label: '۰۹:۰۰', hour: 9, minute: 0 },
+    { label: '۱۰:۰۰', hour: 10, minute: 0 },
+  ];
+
+  const formattedBriefingTime = toPersianDigits(
+    `${String(dailyBriefingHour).padStart(2, '0')}:${String(dailyBriefingMinute).padStart(2, '0')}`
+  );
 
   const maskKey = (key: string) => {
     if (key.length <= 10) return '••••••••';
@@ -409,7 +445,7 @@ export const SettingsScreen: React.FC = () => {
                 return (
                   <Pressable
                     key={opt.key}
-                    onPress={() => setWeekStart(opt.key as typeof weekStart)}
+                    onPress={() => setWeekStart(opt.key)}
                     style={[
                       styles.radioRow,
                       {
@@ -474,8 +510,54 @@ export const SettingsScreen: React.FC = () => {
             اعلان‌ها و یادآوری‌ها
           </Text>
           <Card variant="flat" style={{ padding: spacing.md }}>
+            {/* Permission Banner if not granted */}
+            {permissionStatus !== 'granted' && (
+              <View
+                style={{
+                  backgroundColor: colors.warningSubtle,
+                  borderRadius: radii.sm,
+                  padding: spacing.sm,
+                  marginBottom: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.warning,
+                }}
+              >
+                <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="notifications-circle-outline" size={20} color={colors.warning} />
+                  <Text
+                    style={[
+                      typography.bodySmall,
+                      { color: colors.warning, fontWeight: '700', textAlign: 'right' },
+                    ]}
+                  >
+                    دسترسی اعلان‌ها هنوز فعال نشده است
+                  </Text>
+                </View>
+                <Text
+                  style={[
+                    typography.caption,
+                    { color: colors.textSecondary, textAlign: 'right', marginTop: 4, lineHeight: 18 },
+                  ]}
+                >
+                  برای دریافت یادآور تسک‌ها و خلاصه صبحگاهی، لطفاً مجوز اعلان را فعال نمایید.
+                </Text>
+                <View style={{ marginTop: 8 }}>
+                  <Button
+                    title="درخواست دسترسی اعلان"
+                    onPress={requestPermissions}
+                    variant="outline"
+                    size="sm"
+                    icon={<Ionicons name="shield-checkmark-outline" size={16} color={colors.accent} />}
+                  />
+                </View>
+              </View>
+            )}
+
             <View style={styles.switchRow}>
-              <ToggleSwitch value={dailyBriefing} onValueChange={setDailyBriefing} />
+              <ToggleSwitch
+                value={dailyBriefing}
+                onValueChange={(val) => setDailyBriefingEnabled(val)}
+              />
               <View style={styles.switchTextCol}>
                 <Text
                   style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
@@ -485,10 +567,67 @@ export const SettingsScreen: React.FC = () => {
                 <Text
                   style={[typography.caption, { color: colors.textSecondary, textAlign: 'right' }]}
                 >
-                  ارسال اعلان مرور کارهای روزانه در ساعت ۸:۰۰ صبح
+                  ارسال اعلان مرور کارهای روزانه در ساعت {formattedBriefingTime}
                 </Text>
               </View>
             </View>
+
+            {/* Daily Briefing Time Selector */}
+            {dailyBriefing && (
+              <View
+                style={{
+                  marginTop: spacing.md,
+                  paddingTop: spacing.md,
+                  borderTopWidth: 1,
+                  borderTopColor: isDark ? colors.border : colors.borderLight,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.bodySmall,
+                    { color: colors.textPrimary, fontWeight: '600', textAlign: 'right', marginBottom: 8 },
+                  ]}
+                >
+                  ساعت ارسال خلاصه صبحگاهی:
+                </Text>
+                <View style={{ flexDirection: 'row-reverse', gap: 6, flexWrap: 'wrap' }}>
+                  {briefingTimePresets.map((preset) => {
+                    const isSelected =
+                      dailyBriefingHour === preset.hour && dailyBriefingMinute === preset.minute;
+                    return (
+                      <Pressable
+                        key={preset.label}
+                        onPress={() => setDailyBriefingTime(preset.hour, preset.minute)}
+                        style={{
+                          backgroundColor: isSelected ? colors.accent : colors.surfaceRaised,
+                          borderColor: isSelected
+                            ? colors.accent
+                            : isDark
+                            ? colors.border
+                            : colors.borderLight,
+                          borderWidth: 1,
+                          borderRadius: radii.full,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            typography.caption,
+                            {
+                              color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {preset.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
 
             <View
               style={[
@@ -501,7 +640,14 @@ export const SettingsScreen: React.FC = () => {
                 },
               ]}
             >
-              <ToggleSwitch value={taskReminders} onValueChange={setTaskReminders} />
+              <ToggleSwitch
+                value={taskReminders}
+                onValueChange={async (val) => {
+                  await setTaskRemindersEnabled(val);
+                  const tasks = usePlannerStore.getState().tasks;
+                  await syncAllTaskReminders(tasks, val, defaultReminderOffset);
+                }}
+              />
               <View style={styles.switchTextCol}>
                 <Text
                   style={[typography.bodyMedium, { color: colors.textPrimary, textAlign: 'right' }]}
@@ -514,6 +660,108 @@ export const SettingsScreen: React.FC = () => {
                   ارسال هشدار قبل از فرارسیدن موعد انجام کار
                 </Text>
               </View>
+            </View>
+
+            {/* Default Reminder Offset Selector */}
+            {taskReminders && (
+              <View
+                style={{
+                  marginTop: spacing.md,
+                  paddingTop: spacing.md,
+                  borderTopWidth: 1,
+                  borderTopColor: isDark ? colors.border : colors.borderLight,
+                }}
+              >
+                <Text
+                  style={[
+                    typography.bodySmall,
+                    { color: colors.textPrimary, fontWeight: '600', textAlign: 'right', marginBottom: 8 },
+                  ]}
+                >
+                  زمان پیش‌فرض هشدار تسک:
+                </Text>
+                <View style={{ flexDirection: 'row-reverse', gap: 6, flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'در زمان سررسید', value: 0 },
+                    { label: '۱۰ دقیقه قبل', value: 10 },
+                    { label: '۳۰ دقیقه قبل', value: 30 },
+                    { label: '۱ ساعت قبل', value: 60 },
+                  ].map((preset) => {
+                    const isSelected = defaultReminderOffset === preset.value;
+                    return (
+                      <Pressable
+                        key={preset.value}
+                        onPress={() => setDefaultReminderOffset(preset.value)}
+                        style={{
+                          backgroundColor: isSelected ? colors.accent : colors.surfaceRaised,
+                          borderColor: isSelected
+                            ? colors.accent
+                            : isDark
+                            ? colors.border
+                            : colors.borderLight,
+                          borderWidth: 1,
+                          borderRadius: radii.full,
+                          paddingHorizontal: 12,
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <Text
+                          style={[
+                            typography.caption,
+                            {
+                              color: isSelected ? '#FFFFFF' : colors.textPrimary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {preset.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Test Notification Button */}
+            <View
+              style={{
+                marginTop: spacing.md,
+                paddingTop: spacing.md,
+                borderTopWidth: 1,
+                borderTopColor: isDark ? colors.border : colors.borderLight,
+              }}
+            >
+              <Button
+                title={isSendingTest ? 'در حال ارسال اعلان...' : 'آزمون ارسال اعلان محلی'}
+                onPress={async () => {
+                  const success = await sendTestNotification();
+                  if (success) {
+                    setNotificationTestFeedback('اعلان آزمایشی ارسال شد!');
+                  } else {
+                    setNotificationTestFeedback('ارسال اعلان با خطا مواجه شد. لطفاً دسترسی‌ها را بررسی فرمایید.');
+                  }
+                  setTimeout(() => setNotificationTestFeedback(null), 3500);
+                }}
+                variant="outline"
+                size="sm"
+                icon={<Ionicons name="paper-plane-outline" size={16} color={colors.accent} />}
+              />
+              {notificationTestFeedback && (
+                <Text
+                  style={[
+                    typography.caption,
+                    {
+                      color: colors.success,
+                      fontWeight: '600',
+                      textAlign: 'center',
+                      marginTop: 6,
+                    },
+                  ]}
+                >
+                  {notificationTestFeedback}
+                </Text>
+              )}
             </View>
           </Card>
 

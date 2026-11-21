@@ -3,12 +3,14 @@ import { notes } from './notes';
 import { conversations } from './conversations';
 import { messages } from './messages';
 import { aiApiKeys } from './aiKeys';
+import { appSettings } from './appSettings';
 
 export * from './tasks';
 export * from './notes';
 export * from './conversations';
 export * from './messages';
 export * from './aiKeys';
+export * from './appSettings';
 
 export const schema = {
   tasks,
@@ -16,4 +18,5 @@ export const schema = {
   conversations,
   messages,
   aiApiKeys,
+  appSettings,
 };

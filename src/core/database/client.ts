@@ -81,6 +81,13 @@ export function initializeDatabase(
       `PRAGMA journal_mode = ${journalMode}; PRAGMA foreign_keys = ${enableForeignKeys ? 'ON' : 'OFF'};`
     );
 
+    // Backward-compatible schema evolution for existing databases
+    try {
+      nativeDb.execSync(`ALTER TABLE tasks ADD COLUMN reminder_offset_minutes integer;`);
+    } catch {
+      // Column may already exist or table not yet created
+    }
+
     expoDbInstance = nativeDb;
     dbInstance = drizzle(nativeDb, { schema });
 
