@@ -20,7 +20,7 @@ interface ScrollTimePickerProps {
 /**
  * Normalizes Persian, Arabic, and English digits into an integer, or null if invalid.
  */
-function parseDigits(raw: string): number | null {
+export function parseTimeDigits(raw: string): number | null {
   const english = raw
     .replace(/[۰-۹]/g, (d) => (d.charCodeAt(0) - 1776).toString())
     .replace(/[٠-٩]/g, (d) => (d.charCodeAt(0) - 1632).toString())
@@ -41,81 +41,114 @@ export const ScrollTimePicker: React.FC<ScrollTimePickerProps> = ({
   const hourInputRef = useRef<TextInput>(null);
   const minuteInputRef = useRef<TextInput>(null);
 
+  // Refs prevent stale-closure reads when onBlur fires synchronously after focus()
+  const hourTextRef = useRef<string | null>(null);
+  const minuteTextRef = useRef<string | null>(null);
+
   const [isHourFocused, setIsHourFocused] = useState(false);
   const [isMinuteFocused, setIsMinuteFocused] = useState(false);
 
   const [hourInputText, setHourInputText] = useState<string | null>(null);
   const [minuteInputText, setMinuteInputText] = useState<string | null>(null);
 
-  const hourDisplay =
-    isHourFocused && hourInputText !== null
-      ? hourInputText
-      : toPersianDigits(selectedHour.toString().padStart(2, '0'));
+  const paddedHour = toPersianDigits(selectedHour.toString().padStart(2, '0'));
+  const paddedMinute = toPersianDigits(selectedMinute.toString().padStart(2, '0'));
 
-  const minuteDisplay =
-    isMinuteFocused && minuteInputText !== null
-      ? minuteInputText
-      : toPersianDigits(selectedMinute.toString().padStart(2, '0'));
+  const hourDisplay = isHourFocused && hourInputText !== null ? hourInputText : paddedHour;
+  const minuteDisplay = isMinuteFocused && minuteInputText !== null ? minuteInputText : paddedMinute;
 
   const handleHourFocus = () => {
     setIsHourFocused(true);
-    setHourInputText(toPersianDigits(selectedHour.toString().padStart(2, '0')));
+    hourTextRef.current = '';
+    setHourInputText('');
   };
 
   const handleHourChange = (text: string) => {
-    const parsed = parseDigits(text);
+    const cleanDigits = text
+      .replace(/[۰-۹]/g, (d) => (d.charCodeAt(0) - 1776).toString())
+      .replace(/[٠-٩]/g, (d) => (d.charCodeAt(0) - 1632).toString())
+      .replace(/[^0-9]/g, '')
+      .slice(0, 2);
 
-    if (parsed === null) {
+    if (!cleanDigits) {
+      hourTextRef.current = '';
       setHourInputText('');
       return;
     }
 
+    const parsed = parseInt(cleanDigits, 10);
     const clamped = Math.max(0, Math.min(23, parsed));
-    setHourInputText(toPersianDigits(clamped.toString()));
+    const displayText =
+      cleanDigits.length === 2
+        ? toPersianDigits(clamped.toString().padStart(2, '0'))
+        : toPersianDigits(cleanDigits);
+
+    hourTextRef.current = displayText;
+    setHourInputText(displayText);
     onChangeHour(clamped);
 
-    // Auto-advance to minute input when 2 digits are entered
-    const cleanDigits = text.replace(/[^0-9۰-۹٠-٩]/g, '');
+    // Auto-advance to minute input after state/ref update when 2 digits are entered
     if (cleanDigits.length >= 2) {
-      minuteInputRef.current?.focus();
+      setTimeout(() => {
+        minuteInputRef.current?.focus();
+      }, 0);
     }
   };
 
   const handleHourBlur = () => {
     setIsHourFocused(false);
-    if (hourInputText !== null) {
-      const parsed = parseDigits(hourInputText);
-      const val = parsed !== null ? Math.max(0, Math.min(23, parsed)) : selectedHour;
-      onChangeHour(val);
+    const latest = hourTextRef.current;
+    if (latest !== null && latest.length > 0) {
+      const parsed = parseTimeDigits(latest);
+      if (parsed !== null) {
+        onChangeHour(Math.max(0, Math.min(23, parsed)));
+      }
     }
+    hourTextRef.current = null;
     setHourInputText(null);
   };
 
   const handleMinuteFocus = () => {
     setIsMinuteFocused(true);
-    setMinuteInputText(toPersianDigits(selectedMinute.toString().padStart(2, '0')));
+    minuteTextRef.current = '';
+    setMinuteInputText('');
   };
 
   const handleMinuteChange = (text: string) => {
-    const parsed = parseDigits(text);
+    const cleanDigits = text
+      .replace(/[۰-۹]/g, (d) => (d.charCodeAt(0) - 1776).toString())
+      .replace(/[٠-٩]/g, (d) => (d.charCodeAt(0) - 1632).toString())
+      .replace(/[^0-9]/g, '')
+      .slice(0, 2);
 
-    if (parsed === null) {
+    if (!cleanDigits) {
+      minuteTextRef.current = '';
       setMinuteInputText('');
       return;
     }
 
+    const parsed = parseInt(cleanDigits, 10);
     const clamped = Math.max(0, Math.min(59, parsed));
-    setMinuteInputText(toPersianDigits(clamped.toString()));
+    const displayText =
+      cleanDigits.length === 2
+        ? toPersianDigits(clamped.toString().padStart(2, '0'))
+        : toPersianDigits(cleanDigits);
+
+    minuteTextRef.current = displayText;
+    setMinuteInputText(displayText);
     onChangeMinute(clamped);
   };
 
   const handleMinuteBlur = () => {
     setIsMinuteFocused(false);
-    if (minuteInputText !== null) {
-      const parsed = parseDigits(minuteInputText);
-      const val = parsed !== null ? Math.max(0, Math.min(59, parsed)) : selectedMinute;
-      onChangeMinute(val);
+    const latest = minuteTextRef.current;
+    if (latest !== null && latest.length > 0) {
+      const parsed = parseTimeDigits(latest);
+      if (parsed !== null) {
+        onChangeMinute(Math.max(0, Math.min(59, parsed)));
+      }
     }
+    minuteTextRef.current = null;
     setMinuteInputText(null);
   };
 
@@ -145,12 +178,13 @@ export const ScrollTimePicker: React.FC<ScrollTimePickerProps> = ({
           <TextInput
             ref={hourInputRef}
             value={hourDisplay}
+            placeholder={paddedHour}
+            placeholderTextColor={colors.textMuted}
             onChangeText={handleHourChange}
             onFocus={handleHourFocus}
             onBlur={handleHourBlur}
             keyboardType="number-pad"
             maxLength={2}
-            selectTextOnFocus
             textAlign="center"
             returnKeyType="next"
             onSubmitEditing={() => minuteInputRef.current?.focus()}
@@ -201,13 +235,14 @@ export const ScrollTimePicker: React.FC<ScrollTimePickerProps> = ({
           <TextInput
             ref={minuteInputRef}
             value={minuteDisplay}
+            placeholder={paddedMinute}
+            placeholderTextColor={colors.textMuted}
             onChangeText={handleMinuteChange}
             onFocus={handleMinuteFocus}
             onBlur={handleMinuteBlur}
             onKeyPress={handleMinuteKeyPress}
             keyboardType="number-pad"
             maxLength={2}
-            selectTextOnFocus
             textAlign="center"
             returnKeyType="done"
             style={[
