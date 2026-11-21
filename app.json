@@ -14,7 +14,7 @@
     "android": {
       "package": "com.noyad.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F8F3EA",
+        "backgroundColor": "#AC4126",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -61,6 +61,12 @@
           "backgroundColor": "#F8F3EA"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ce318d60-2735-4464-ab76-697af4c54614"
+      }
+    }
   }
 }

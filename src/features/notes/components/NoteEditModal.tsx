@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme';
 import { Note } from '../../../domain/models/note';
 import { Button } from '../../../shared/components/Button';
@@ -35,6 +36,7 @@ const NoteForm: React.FC<{
   onSave: NoteEditModalProps['onSave'];
 }> = ({ note, onClose, onSave }) => {
   const { colors, radii, spacing, typography, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState(note?.title ?? '');
   const [content, setContent] = useState(note?.content ?? '');
@@ -70,7 +72,9 @@ const NoteForm: React.FC<{
           backgroundColor: colors.surface,
           borderTopLeftRadius: radii.xl,
           borderTopRightRadius: radii.xl,
-          padding: spacing.xl,
+          paddingHorizontal: spacing.xl,
+          paddingTop: spacing.xl,
+          paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
           borderColor: isDark ? colors.border : colors.borderLight,
         },
       ]}
@@ -85,7 +89,10 @@ const NoteForm: React.FC<{
         </Text>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Title */}
         <TextInputField
           label="عنوان یادداشت *"

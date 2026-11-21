@@ -12,6 +12,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../../shared/theme';
 import { Task } from '../../../domain/models/task';
 import { TaskPriority, TASK_PRIORITIES } from '../../../domain/types/common';
@@ -48,6 +49,7 @@ const TaskForm: React.FC<{
   onSave: TaskEditModalProps['onSave'];
 }> = ({ task, initialDate, onClose, onSave }) => {
   const { colors, radii, spacing, typography, fonts, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
@@ -147,7 +149,7 @@ const TaskForm: React.FC<{
           borderTopRightRadius: radii.xl,
           paddingHorizontal: spacing.xl,
           paddingTop: spacing.lg,
-          paddingBottom: spacing.xl,
+          paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md,
           borderColor: isDark ? colors.border : colors.borderLight,
         },
       ]}
